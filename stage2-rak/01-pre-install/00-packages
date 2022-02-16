@@ -1,0 +1,15 @@
+network-manager
+python3-pip
+rng-tools
+apt-transport-https
+ca-certificates
+curl
+gnupg
+docker-ce 
+docker-ce-cli 
+containerd.io
+vim
+git
+figlet
+i2c-tools
+jq

@@ -45,6 +45,7 @@ else
 	source ${CONFIG_FILE}
 fi
 
+DEPLOY_DIR="deploy"
 CONTAINER_NAME=${CONTAINER_NAME:-pigen_work}
 CONTINUE=${CONTINUE:-0}
 PRESERVE_CONTAINER=${PRESERVE_CONTAINER:-0}
@@ -74,22 +75,14 @@ fi
 
 # Modify original build-options to allow config file to be mounted in the docker container
 BUILD_OPTS="$(echo "${BUILD_OPTS:-}" | sed -E 's@\-c\s?([^ ]+)@-c /config@')"
-
-# Check the arch of the machine we're running on. If it's 64-bit, use a 32-bit base image instead
-case "$(uname -m)" in
-  x86_64|aarch64)
-    BASE_IMAGE=i386/debian:bullseye
-    ;;
-  *)
-    BASE_IMAGE=debian:bullseye
-    ;;
-esac
+BASE_IMAGE=${BASE_IMAGE:-"i386/debian:bullseye"}
 ${DOCKER} build --build-arg BASE_IMAGE=${BASE_IMAGE} -t pi-gen "${DIR}"
 
 if [ "${CONTAINER_EXISTS}" != "" ]; then
 	trap 'echo "got CTRL+C... please wait 5s" && ${DOCKER} stop -t 5 ${CONTAINER_NAME}_cont' SIGINT SIGTERM
 	time ${DOCKER} run --rm --privileged \
 		--cap-add=ALL \
+		-v $(pwd):/pi-gen \
 		-v /dev:/dev \
 		-v /lib/modules:/lib/modules \
 		${PIGEN_DOCKER_OPTS} \
@@ -101,12 +94,13 @@ if [ "${CONTAINER_EXISTS}" != "" ]; then
 	# binfmt_misc is sometimes not mounted with debian bullseye image
 	(mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc || true) &&
 	cd /pi-gen; ./build.sh ${BUILD_OPTS} &&
-	rsync -av work/*/build.log deploy/" &
+	rsync -av work/*/build.log ${DEPLOY_DIR}/" &
 	wait "$!"
 else
 	trap 'echo "got CTRL+C... please wait 5s" && ${DOCKER} stop -t 5 ${CONTAINER_NAME}' SIGINT SIGTERM
 	time ${DOCKER} run --name "${CONTAINER_NAME}" --privileged \
 		--cap-add=ALL \
+		-v $(pwd):/pi-gen \
 		-v /dev:/dev \
 		-v /lib/modules:/lib/modules \
 		${PIGEN_DOCKER_OPTS} \
@@ -117,17 +111,16 @@ else
 	# binfmt_misc is sometimes not mounted with debian bullseye image
 	(mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc || true) &&
 	cd /pi-gen; ./build.sh ${BUILD_OPTS} &&
-	rsync -av work/*/build.log deploy/" &
+	rsync -av work/*/build.log ${DEPLOY_DIR}/" &
 	wait "$!"
 fi
 
-echo "copying results from deploy/"
-${DOCKER} cp "${CONTAINER_NAME}":/pi-gen/deploy .
-ls -lah deploy
+${DOCKER} cp ${CONTAINER_NAME}:/pi-gen/${DEPLOY_DIR} build
+ls -lah build
 
 # cleanup
 if [ "${PRESERVE_CONTAINER}" != "1" ]; then
 	${DOCKER} rm -v "${CONTAINER_NAME}"
 fi
 
-echo "Done! Your image(s) should be in deploy/"
+echo "Done! Your image(s) should be in build/"

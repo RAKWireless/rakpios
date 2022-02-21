@@ -1,0 +1,56 @@
+# Changelog
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [0.3.5] - 2022-02-17
+### Added
+- Use qemu-arm-static like upstream
+- Split kernel and system update in two different substages
+- Docker build: Using mounted volume instead of COPY, added ARCH variable
+- Improve build process
+- Start using "changelog"
+### Image
+- https://drive.google.com/file/d/1fNwfxX8B6SU03YKmBm4Tp65lgz6jz2iN/view?usp=sharing
+
+## [0.3.4] - 2022-01-28
+### Added
+- Add oled script to dispaly basic info
+- Add support for WiFi6 modules
+- Remove unnecessary docker bridge interfaces info from MOTD
+- Add portainer script
+- Force users to change password after first boot
+- Add antenna setting to cofig.txt
+### Fixed
+- Fixed on-board unsynchronized RTC
+## Changed
+- Default to use cached kernel file
+### Image 
+- https://drive.google.com/file/d/1fNwfxX8B6SU03YKmBm4Tp65lgz6jz2iN/view?usp=sharing
+
+## [0.3.3] - 2022-01-07
+### Added
+- Add user rak to the docker group
+- Add docker-compose to the image
+### Image 
+- https://drive.google.com/file/d/1zf1QVhRmbsULeeMGh8YywF8Zs-AO6gxr/view?usp=sharing
+
+## [0.3.2] - 2021-12-16
+### Added
+- /etc/os-release and /boot/issue.txt are now auto generated,the IMG_NAME in the build configuration file is used as the version id of the imageAdd oled sc>
+### Fixed
+- Fixed RAKUID bug
+### Image 
+- https://drive.google.com/file/d/1hKMHUpxfYzK_L-iBMreu0hrJEBbWa7zW/view?usp=sharing
+
+## [0.3.1] - 2021-12-09
+### Added
+- add Network Manager
+- support HWClock t use NTP & onboard RTC
+- support RAKUID
+- Start versioning based on current developing status to help things up-to-date.
+### Image 
+- https://drive.google.com/file/d/1Lcjsy2Im40BqavCjOSU8QskZJ1Uf45Ib/view?usp=sharing

@@ -58,8 +58,8 @@ There are a number of different directories in the `stage2-rak` directory:
 
   - **01-pre-installt.sh** - Pre-install docker, docker-compose, python libraries, and add user **rak** user to docker group. 
     
-  - **02-kernel** - A kernel builder allows you to cross-build a kernel that tailored exactly to your requirements.
+  - **02-kernel** - A kernel builder allows you to cross-build a kernel that is tailored exactly to your requirements.
     
-  - **03-sys-update** - This stage focused on moving script to the new image, adding new features like rakuid,  OLED script, portainer, MOTD, and so on. This stage also update the new image's os-releases file
+  - **03-sys-update** - This stage focused on moving script to the new image, adding new features like rakuid,  OLED script, portainer, MOTD, and so on. This stage also update the new image's os-releases file.
     
 

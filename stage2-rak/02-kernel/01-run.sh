@@ -3,18 +3,42 @@
 ARCH=${ARCH:-"arm64"}
 export ARCH
 
+KERNEL_TAG=${KERNEL_TAG:-"rpi-5.15.y"}
+export KERNEL_TAG
+
 pushd files >> /dev/null
 
 if [[ ${KERNEL_BUILD:-0} -eq 1 ]]; then
 
     echo "Building kernel"
     chmod +x ./make
+
+    # Checkout the kernel
     ./make init
+
+    # Apply patches
+    if [ -f patches/${KERNEL_TAG}.patch ]; then
+        echo "Applying ${KERNEL_TAG}.patch ..."
+        pushd linux >> /dev/null
+        git apply ../patches/${KERNEL_TAG}.patch
+        popd >> /dev/null
+    fi
+
+    # Apply configuration
     ./make default
     cp -f ${ARCH}.config linux/.config
+
+    # Build
     ./make build
-    #./make zip # this step creates a ZIP we can use as cache
+    
+    # Copy kernel and modules to image
     ./make copy ${ROOTFS_DIR}
+    
+    # Create zipped version we can use as cache
+    ./make zip
+
+    # Clean up
+    rm -rf linux modules
 
 elif [[ ${KERNEL_CACHED:-1} -eq 1 ]]; then
 

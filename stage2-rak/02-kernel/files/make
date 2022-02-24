@@ -25,6 +25,9 @@ usage() {
 CORES=${CORES:=$(grep "^processor" /proc/cpuinfo | sort -u | wc -l)}
 CORES=${CORES:=1}
 
+# Commit to build
+KERNEL_TAG=${KERNEL_TAG:-"rpi-5.15.y"}
+
 # Get architecture
 ARCH=${ARCH:-"arm64"}
 case ${ARCH} in
@@ -69,15 +72,15 @@ case ${OPTION} in
 
     "init" | "reset" )
         if [ ! -d linux ]; then
-            git clone --depth=1 https://github.com/raspberrypi/linux
+            git clone --depth=1 --branch ${KERNEL_TAG} https://github.com/raspberrypi/linux
         else
             pushd linux >> /dev/null
             git reset --hard
             git clean -f -d -X
+            git checkout ${KERNEL_TAG}
             popd >> /dev/null
         fi
         rm -rf modules
-
         ;;
 
     "default" )
@@ -113,7 +116,6 @@ case ${OPTION} in
             exit 1
         fi
 
-        FILE=$(basename -- "${KERNEL}" .img).zip
         RELEASE=$(cat linux/include/config/kernel.release)
 
         rm -rf rootfs $FILE
@@ -127,7 +129,7 @@ case ${OPTION} in
         cp -r linux/arch/${ARCH}/boot/dts/overlays/README rootfs/boot/overlays/
         cp -r linux/.config rootfs/boot/config-${RELEASE}
         pushd rootfs >> /dev/null
-        zip -yrq ../$FILE *
+        zip -yrq ../${ARCH}.kernel.zip *
         popd >> /dev/null
         rm -rf rootfs
 

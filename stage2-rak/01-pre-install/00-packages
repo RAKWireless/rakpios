@@ -13,3 +13,4 @@ git
 figlet
 i2c-tools
 jq
+gpiod

@@ -72,8 +72,10 @@ case ${OPTION} in
 
     "init" | "reset" )
         if [ ! -d linux ]; then
+            echo "Cloning raspberrypi/linux repository, ${KERNEL_TAG} tag" 
             git clone --depth=1 --branch ${KERNEL_TAG} https://github.com/raspberrypi/linux
         else
+            echo "Resetting raspberrypi/linux repository, ${KERNEL_TAG} tag" 
             pushd linux >> /dev/null
             git reset --hard
             git clean -f -d -X
@@ -129,6 +131,7 @@ case ${OPTION} in
         cp -r linux/arch/${ARCH}/boot/dts/overlays/README rootfs/boot/overlays/
         cp -r linux/.config rootfs/boot/config-${RELEASE}
         pushd rootfs >> /dev/null
+        rm ../${ARCH}.kernel.zip
         zip -yrq ../${ARCH}.kernel.zip *
         popd >> /dev/null
         rm -rf rootfs

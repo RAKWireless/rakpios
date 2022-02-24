@@ -275,6 +275,7 @@ export NO_PRERUN_QCOW2="${NO_PRERUN_QCOW2:-1}"
 export ARCH=${ARCH:-"arm64"}
 export KERNEL_BUILD=${KERNEL_BUILD:-0}
 export KERNEL_CACHED=${KERNEL_CACHED:-0}
+export KERNEL_TAG
 
 dependencies_check "${BASE_DIR}/depends"
 

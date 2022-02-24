@@ -81,8 +81,19 @@ dtparam=i2c_arm=on
 # Enable SPI
 dtparam=spi=on
 
-# Enable onboard RTC 
+# Enable onboard RTC (this is specific to the RAK7391)
 dtoverlay=i2c-rtc,pcf85063a
+
+# Enable onboard GPIO Expander (this is specific to the RAK7391)
+dtoverlay=pcf857x,addr=0x20,pi4ioe5v96224
+
+# Enable onboard ADS1115 (this is specific to the RAK7391)
+#dtoverlay=ads1115
+#dtparam=cha_enable
+#dtparam=chb_enable
+#dtparam=chc_enable
+#dtparam=chd_enable
+#dtparam=i2c_arm_baudrate=400000
 
 # Antenna setting, values:
 #   ant1: PCB antenna (default)

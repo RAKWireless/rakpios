@@ -1,20 +1,18 @@
-# stage2-rak
+# Notes about RAKPiOS specific features
 
-Stage2-rak is used to build a customized image for RAK WisGate Developer products. The stage will make some changes to the systems, including pre-installing docker and other tools, adding new kernel modules, updating system information, and adding some new features tailored for RAK WisGate Developer products. 
-
+Changes to the default Raspberry Pi OS image are defined on the `stage2-rak` stage. This is used to build a customized image for RAK WisGate Developer products. The stage will make some changes to the systems, including pre-installing docker and other tools, adding new kernel modules, updating system information, and adding some new features tailored for RAK WisGate Developer products. 
 
 
 ## Getting started with building using stage2-rak
 
 As mentioned in the original `README.md`, users can define a variable called  `STAGE_LIST` in the configuration file to change the order of building stages. In the `default_config` file, variable `STAGE_LIST` is set to `stage0 stage1 stage2 stage2-rak`, then instead of working through the numeric stages in order, this list will be followed. 
 
-RakpiOS is a lite system, thus the build will skip stage 3, stage 4, and stage 5 which are only for a desktop system with a graphical user interface.  
-
+RAKPiOS is a *lite* system, thus the build will skip stage 3, stage 4, and stage 5 which are only for a desktop system with a graphical user interface.  
 
 
 ## A simple example for building RakpiOS image
 
-We defined some original configuration tags and also introduced some custom configuration tags in the `default_config` file. 
+We defined some original configuration tags and also introduced some custom configuration tags in the `config_rak` file. 
 
 ```
 # Original configuration tags
@@ -32,23 +30,27 @@ IMG_DATE=$( date +%Y%m%d )
 PI_GEN_REPO=https://github.com/RAKWireless/rakpios
 KERNEL_BUILD=0
 KERNEL_CACHED=1
+KERNEL_TAG=ac66b3f
 ```
 
-For more details about the original configurations, please check the original `READMD.md` . For custom configuration tags, now you can define whether you want to build the kernel (`KERNEL_BUILD` variable), use the cached image (`KERNEL_CACHED` variable) or just leave it to the official kernel.
+For more details about the original configurations, please check the original `READMD.md` . For custom configuration tags, now you can define whether you want to build the kernel (`KERNEL_BUILD` and `KERNEL_TAG` variables), use the cached image (`KERNEL_CACHED` variable) or just leave it to the official kernel. 
+
+If `KERNEL_BUILD` is set to 1 but no `KERNEL_TAG` is defined then it defaults to the HEAD of the `rpi-5.15.y` branch. But please mind that some specific kernel patches (like GPIO Expander support) will not be applied since they are version-dependent.
 
 The final step is to launch the build.sh script：
 
 ```bash
-sudo ./build.sh -c default_config
+sudo ./build.sh -c config_rak
 ```
 
 or, you can use docker to perform the build:
 
 ```
-sudo ./build-docker.sh -c default_config
+./build-docker.sh -c config_rak
 ```
 
 Please check the original README.md to see how to skip stages and also how to continue the build after a failure.
+
 
 ## How the stage2-rak stage works
 

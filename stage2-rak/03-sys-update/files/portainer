@@ -14,16 +14,16 @@ Help()
 {
    # Display Help
    echo ""
-   echo "Usage: portainer [OPTION] <up|down>"
+   echo "Usage: portainer [OPTION] COMMAND"
    echo "" 
    echo "Options:"
-   echo "-h,--help  Print this Help"
-   echo "-v <portainer image version> define a specific version of portainer you want to deploy" 
-   echo "-t <portainer app template url>  define a specific portainer app template to start with"
+   echo "  -h,--help  Print this Help"
+   echo "  -v <portainer image version> define a specific version of portainer you want to deploy" 
+   echo "  -t <portainer app template url>  define a specific portainer app template to start with"
    echo ""
-   echo "Arguments:"
-   echo "up    Start portainer service"
-   echo "down  Stop portainer service"
+   echo "Commands:"
+   echo "  up    Start portainer service"
+   echo "  down  Stop portainer service"
    echo ""	
 }
 
@@ -130,7 +130,7 @@ done
 
 if [ $# != 1 ]
 then
-    echo "one argument 'up' or 'down' is required"
+    echo "one command 'up' or 'down' is required"
     Help
     exit
 fi
@@ -144,6 +144,6 @@ then
     Down
     exit
 else
-    echo "invalid argument: $1"
+    echo "invalid command: $1"
     Help
 fi

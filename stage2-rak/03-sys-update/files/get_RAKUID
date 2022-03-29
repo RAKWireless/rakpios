@@ -9,5 +9,5 @@ try:
     # Initialize a new atecc object
     atecc = ATECC(i2c)
     print(atecc.serial_number)
-except OSError as error:
+except:
     print("FFFFFFFFFFFFFFFFFF")

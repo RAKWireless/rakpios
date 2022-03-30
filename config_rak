@@ -1,6 +1,6 @@
 # Original configuration tags
 ARCH=arm64
-VERSION=0.3.4
+VERSION=0.4.0
 IMG_NAME="rakpios-${VERSION}-${ARCH}"
 TARGET_HOSTNAME="rakpios"
 FIRST_USER_NAME="rak"

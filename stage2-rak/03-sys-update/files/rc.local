@@ -25,7 +25,7 @@ else
 fi
 
 #Dispaly basic info on oled screen
-/bin/oled
+/bin/oled &
 
 exit 0
 

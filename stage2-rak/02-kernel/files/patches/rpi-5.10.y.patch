@@ -1,0 +1,764 @@
+diff --git a/Documentation/devicetree/bindings/gpio/nxp,pcf8575.yaml b/Documentation/devicetree/bindings/gpio/nxp,pcf8575.yaml
+new file mode 100644
+index 000000000000..f0ff66c4c74e
+--- /dev/null
++++ b/Documentation/devicetree/bindings/gpio/nxp,pcf8575.yaml
+@@ -0,0 +1,103 @@
++# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
++%YAML 1.2
++---
++$id: http://devicetree.org/schemas/gpio/nxp,pcf8575.yaml#
++$schema: http://devicetree.org/meta-schemas/core.yaml#
++
++title: PCF857x-compatible I/O expanders
++
++maintainers:
++  - Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
++
++description:
++  The PCF857x-compatible chips have "quasi-bidirectional" I/O lines that can be
++  driven high by a pull-up current source or driven low to ground. This
++  combines the direction and output level into a single bit per line, which
++  can't be read back. We can't actually know at initialization time whether a
++  line is configured (a) as output and driving the signal low/high, or (b) as
++  input and reporting a low/high value, without knowing the last value written
++  since the chip came out of reset (if any). The only reliable solution for
++  setting up line direction is thus to do it explicitly.
++
++properties:
++  compatible:
++    enum:
++      - maxim,max7328
++      - maxim,max7329
++      - nxp,pca8574
++      - nxp,pca8575
++      - nxp,pca9670
++      - nxp,pca9671
++      - nxp,pca9672
++      - nxp,pca9673
++      - nxp,pca9674
++      - nxp,pca9675
++      - nxp,pcf8574
++      - nxp,pcf8574a
++      - nxp,pcf8575
++      - diodes,pi4ioe5v96224
++      - diodes,pi4ioe5v96248
++
++  reg:
++    maxItems: 1
++
++  gpio-controller: true
++
++  '#gpio-cells':
++    const: 2
++    description:
++      The first cell is the GPIO number and the second cell specifies GPIO
++      flags, as defined in <dt-bindings/gpio/gpio.h>. Only the GPIO_ACTIVE_HIGH
++      and GPIO_ACTIVE_LOW flags are supported.
++
++  lines-initial-states:
++    $ref: /schemas/types.yaml#/definitions/uint32
++    description:
++      Bitmask that specifies the initial state of each line.
++      When a bit is set to zero, the corresponding line will be initialized to
++      the input (pulled-up) state.
++      When the  bit is set to one, the line will be initialized to the
++      low-level output state.
++      If the property is not specified all lines will be initialized to the
++      input state.
++
++  interrupts:
++    maxItems: 1
++
++  interrupt-controller: true
++
++  '#interrupt-cells':
++    const: 2
++
++  wakeup-source: true
++
++patternProperties:
++  "^(.+-hog(-[0-9]+)?)$":
++    type: object
++
++    required:
++      - gpio-hog
++
++required:
++  - compatible
++  - reg
++  - gpio-controller
++  - '#gpio-cells'
++
++additionalProperties: false
++
++examples:
++  - |
++    i2c {
++            #address-cells = <1>;
++            #size-cells = <0>;
++
++            pcf8575: gpio@20 {
++                    compatible = "nxp,pcf8575";
++                    reg = <0x20>;
++                    interrupt-parent = <&irqpin2>;
++                    interrupts = <3 0>;
++                    gpio-controller;
++                    #gpio-cells = <2>;
++                    interrupt-controller;
++                    #interrupt-cells = <2>;
++            };
++    };
+diff --git a/arch/arm/boot/dts/overlays/Makefile b/arch/arm/boot/dts/overlays/Makefile
+index 6fcacdccb608..3a847a8af192 100644
+--- a/arch/arm/boot/dts/overlays/Makefile
++++ b/arch/arm/boot/dts/overlays/Makefile
+@@ -143,6 +143,7 @@ dtbo-$(CONFIG_ARCH_BCM2835) += \
+ 	ov9281.dtbo \
+ 	papirus.dtbo \
+ 	pca953x.dtbo \
++	pcf857x.dtbo \
+ 	pcie-32bit-dma.dtbo \
+ 	pibell.dtbo \
+ 	pifacedigital.dtbo \
+diff --git a/arch/arm/boot/dts/overlays/README b/arch/arm/boot/dts/overlays/README
+index 3a0961540427..eb55aa31f688 100644
+--- a/arch/arm/boot/dts/overlays/README
++++ b/arch/arm/boot/dts/overlays/README
+@@ -2499,6 +2499,28 @@ Params: addr                    I2C address of expander. Default 0x20.
+         pca9654                 Select the Onnn PCA9654 (8 bit)
+         xra1202                 Select the Exar XRA1202 (8 bit)
+ 
++Name:   pcf857x
++Info:   NXP PCF857x family of I2C GPIO expanders. Default is for NXP PCF8574.
++Load:   dtoverlay=pcf857x,<param>=<val>
++Params: addr                    I2C address of expander. Default 0x20.
++        interrupts              GPIO that captures interrupts for this device
++        label                   Label for this device
++        pcf8574                 Select NXP PCF8574 (8 bit)
++        pcf8574a                Select NXP PCF8574A (8 bit)
++        pca8574                 Select NXP PCA8574 (8 bit)
++        pca9670                 Select NXP PCA9670 (8 bit)
++        pca9672                 Select NXP PCA9672 (8 bit)
++        pca9674                 Select NXP PCA9674 (8 bit)
++        pcf8575                 Select NXP PCF8575 (16 bit)
++        pca8575                 Select NXP PCA8575 (16 bit)
++        pca9671                 Select NXP PCA9671 (16 bit)
++        pca9673                 Select NXP PCA9673 (16 bit)
++        pca9675                 Select NXP PCA9675 (16 bit)
++        max7328                 Select MAXIM MAX7328 (8 bit)
++        max7329                 Select MAXIM MAX7329 (8 bit)
++        pi4ioe5v96224           Select DIODES PI4IOE5V96224 (24 bit)
++        pi4ioe5v96248           Select DIODES PI4IOE5V96248 (48 bit)
++
+ 
+ Name:   pcie-32bit-dma
+ Info:   Force PCIe config to support 32bit DMA addresses at the expense of
+diff --git a/arch/arm/boot/dts/overlays/pcf857x-overlay.dts b/arch/arm/boot/dts/overlays/pcf857x-overlay.dts
+new file mode 100644
+index 000000000000..0f3027d99b90
+--- /dev/null
++++ b/arch/arm/boot/dts/overlays/pcf857x-overlay.dts
+@@ -0,0 +1,193 @@
++// Definitions for NXP PCF857x family of I2C GPIO controllers on ARM I2C bus
++/dts-v1/;
++/plugin/;
++
++/ {
++	compatible = "brcm,bcm2837";
++
++        fragment@0 {
++		target = <&i2c_arm>;
++		__overlay__ {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			status = "okay";
++
++			pcf: pcf@20 {
++			        compatible = "nxp,pcf8574";
++                                reg = <0x20>;
++                                gpio-controller;
++                                #gpio-cells = <2>;
++                                interrupt-parent = <&gpio>;
++                                interrupts = <4 8>; // active low level-sensitive
++                                label = "gpioexp";
++                                gpio-line-names =
++                                        "IO0_0",
++                                        "IO0_1",
++                                        "IO0_2",
++                                        "IO0_3",
++                                        "IO0_4",
++                                        "IO0_5",
++                                        "IO0_6",
++                                        "IO0_7",
++                                        "IO1_0",
++                                        "IO1_1",
++                                        "IO1_2",
++                                        "IO1_3",
++                                        "IO1_4",
++                                        "IO1_5",
++                                        "IO1_6",
++                                        "IO1_7",
++                                        "IO2_0",
++                                        "IO2_1",
++                                        "IO2_2",
++                                        "IO2_3",
++                                        "IO2_4",
++                                        "IO2_5",
++                                        "IO2_6",
++                                        "IO2_7",
++                                        "IO3_0",
++                                        "IO3_1",
++                                        "IO3_2",
++                                        "IO3_3",
++                                        "IO3_4",
++                                        "IO3_5",
++                                        "IO3_6",
++                                        "IO3_7",
++                                        "IO4_0",
++                                        "IO4_1",
++                                        "IO4_2",
++                                        "IO4_3",
++                                        "IO4_4",
++                                        "IO4_5",
++                                        "IO4_6",
++                                        "IO4_7",
++                                        "IO5_0",
++                                        "IO5_1",
++                                        "IO5_2",
++                                        "IO5_3",
++                                        "IO5_4",
++                                        "IO5_5",
++                                        "IO5_6",
++                                        "IO5_7";
++			};
++		};
++	};
++
++	fragment@1 {
++		target = <&pcf>;
++		__dormant__ {
++			compatible = "nxp,pcf8574a";
++		};
++	};
++
++	fragment@2 {
++		target = <&pcf>;
++		__dormant__ {
++			compatible = "nxp,pca8574";
++		};
++	};
++
++	fragment@3 {
++		target = <&pcf>;
++		__dormant__ {
++			compatible = "nxp,pca9670";
++		};
++	};
++
++	fragment@4 {
++		target = <&pcf>;
++		__dormant__ {
++			compatible = "nxp,pca9672";
++		};
++	};
++
++	fragment@5 {
++		target = <&pcf>;
++		__dormant__ {
++			compatible = "nxp,pca9674";
++		};
++	};
++
++	fragment@6 {
++		target = <&pcf>;
++		__dormant__ {
++			compatible = "nxp,pcf8575";
++		};
++	};
++
++	fragment@7 {
++		target = <&pcf>;
++		__dormant__ {
++			compatible = "nxp,pca8575";
++		};
++	};
++
++	fragment@8 {
++		target = <&pcf>;
++		__dormant__ {
++			compatible = "nxp,pca9671";
++		};
++	};
++
++	fragment@9 {
++		target = <&pcf>;
++		__dormant__ {
++			compatible = "nxp,pca9673";
++		};
++	};
++
++	fragment@10 {
++		target = <&pcf>;
++		__dormant__ {
++			compatible = "nxp,pca9675";
++		};
++	};
++
++	fragment@11 {
++		target = <&pcf>;
++		__dormant__ {
++			compatible = "maxim,max7328";
++		};
++	};
++
++	fragment@12 {
++		target = <&pcf>;
++		__dormant__ {
++			compatible = "maxim,max7329";
++		};
++	};
++
++	fragment@13 {
++		target = <&pcf>;
++		__dormant__ {
++			compatible = "diodes,pi4ioe5v96224";
++		};
++	};
++
++	fragment@14 {
++		target = <&pcf>;
++		__dormant__ {
++			compatible = "diodes,pi4ioe5v96248";
++		};
++	};
++
++	__overrides__ {
++		addr = <&pcf>,"reg:0";
++		interrupts = <&pcf>,"interrupts:0";
++		label = <&pcf>, "label";
++		pcf8574a = <0>, "+1";
++		pca8574 = <0>, "+2";
++		pca9670 = <0>, "+3";
++		pca9672 = <0>, "+4";
++		pca9674 = <0>, "+5";
++		pcf8575 = <0>, "+6";
++		pca8575 = <0>, "+7";
++		pca9671 = <0>, "+8";
++		pca9673 = <0>, "+9";
++		pca9675 = <0>, "+10";
++		max7328 = <0>, "+11";
++		max7329 = <0>, "+12";
++		pi4ioe5v96224 = <0>, "+13";
++		pi4ioe5v96248 = <0>, "+14";
++	};
++};
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index d4f77fa37d40..637d03698f90 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -1012,7 +1012,7 @@ config GPIO_PCA9570
+ 	  be called gpio-pca9570.
+ 
+ config GPIO_PCF857X
+-	tristate "PCF857x, PCA{85,96}7x, and MAX732[89] I2C GPIO expanders"
++	tristate "PCF857x, PCA{85,96}7x, MAX732[89] and PI4IOE5V962{24,48} I2C GPIO expanders"
+ 	select GPIOLIB_IRQCHIP
+ 	select IRQ_DOMAIN
+ 	help
+@@ -1028,6 +1028,10 @@ config GPIO_PCF857X
+ 	  16 bits:  pcf8575, pcf8575c, pca8575,
+ 	            pca9671, pca9673, pca9675
+ 
++	  24 bits:  pi4ioe5v96224
++
++	  48 bits:  pi4ioe5v96248
++
+ 	  Your board setup code will need to declare the expanders in
+ 	  use, and assign numbers to the GPIOs they expose.  Those GPIOs
+ 	  can then be used from drivers and other kernel code, just like
+diff --git a/drivers/gpio/gpio-pcf857x.c b/drivers/gpio/gpio-pcf857x.c
+index b7568ee33696..84134a2ca462 100644
+--- a/drivers/gpio/gpio-pcf857x.c
++++ b/drivers/gpio/gpio-pcf857x.c
+@@ -1,8 +1,21 @@
+-// SPDX-License-Identifier: GPL-2.0-or-later
+ /*
+  * Driver for pcf857x, pca857x, and pca967x I2C GPIO expanders
+  *
+  * Copyright (C) 2007 David Brownell
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+  */
+ 
+ #include <linux/gpio/driver.h>
+@@ -17,6 +30,7 @@
+ #include <linux/of_device.h>
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
++#include <linux/bitops.h>
+ 
+ 
+ static const struct i2c_device_id pcf857x_id[] = {
+@@ -33,6 +47,8 @@ static const struct i2c_device_id pcf857x_id[] = {
+ 	{ "pca9675", 16 },
+ 	{ "max7328", 8 },
+ 	{ "max7329", 8 },
++	{ "pi4ioe5v96224", 24},
++	{ "pi4ioe5v96248", 48},
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, pcf857x_id);
+@@ -52,6 +68,8 @@ static const struct of_device_id pcf857x_of_table[] = {
+ 	{ .compatible = "nxp,pca9675" },
+ 	{ .compatible = "maxim,max7328" },
+ 	{ .compatible = "maxim,max7329" },
++	{ .compatible = "diodes,pi4ioe5v96224" },
++	{ .compatible = "diodes,pi4ioe5v96248" },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(of, pcf857x_of_table);
+@@ -74,31 +92,42 @@ struct pcf857x {
+ 	struct irq_chip		irqchip;
+ 	struct i2c_client	*client;
+ 	struct mutex		lock;		/* protect 'out' */
+-	unsigned		out;		/* software latch */
+-	unsigned		status;		/* current status */
+-	unsigned		irq_enabled;	/* enabled irqs */
++	u64			out;		/* software latch */
++	u64			status;		/* current status */
++	unsigned int		irq_parent;
++	u64			irq_enabled;	/* enabled irqs */
+ 
+-	int (*write)(struct i2c_client *client, unsigned data);
+-	int (*read)(struct i2c_client *client);
++	int (*write)(struct i2c_client *client, u64 data);
++	int (*read)(struct i2c_client *client, u64 *data);
+ };
+ 
+ /*-------------------------------------------------------------------------*/
+ 
+ /* Talk to 8-bit I/O expander */
+ 
+-static int i2c_write_le8(struct i2c_client *client, unsigned data)
++static int i2c_write_le8(struct i2c_client *client, u64 data)
+ {
+-	return i2c_smbus_write_byte(client, data);
++	return (int)i2c_smbus_write_byte(client, data);
+ }
+ 
+-static int i2c_read_le8(struct i2c_client *client)
++static int i2c_read_le8(struct i2c_client *client, u64 *data)
+ {
+-	return (int)i2c_smbus_read_byte(client);
++	u8 buf[1];
++	int status;
++
++	status = i2c_master_recv(client, buf, 1);
++
++	if(status < 0)
++		return status;
++
++	*data = buf[0];
++
++	return status;
+ }
+ 
+ /* Talk to 16-bit I/O expander */
+ 
+-static int i2c_write_le16(struct i2c_client *client, unsigned word)
++static int i2c_write_le16(struct i2c_client *client, u64 word)
+ {
+ 	u8 buf[2] = { word & 0xff, word >> 8, };
+ 	int status;
+@@ -107,7 +136,7 @@ static int i2c_write_le16(struct i2c_client *client, unsigned word)
+ 	return (status < 0) ? status : 0;
+ }
+ 
+-static int i2c_read_le16(struct i2c_client *client)
++static int i2c_read_le16(struct i2c_client *client, u64 *data)
+ {
+ 	u8 buf[2];
+ 	int status;
+@@ -115,7 +144,60 @@ static int i2c_read_le16(struct i2c_client *client)
+ 	status = i2c_master_recv(client, buf, 2);
+ 	if (status < 0)
+ 		return status;
+-	return (buf[1] << 8) | buf[0];
++
++	*data = (buf[1] << 8) | buf[0];
++
++	return status;
++}
++
++/* Talk to 24-bit I/O expander */
++
++static int i2c_write_le24(struct i2c_client *client, u64 word)
++{
++	u8 buf[6] = { word & 0xff, (word >> 8) & 0xff, (word >> 16) & 0xff};
++	int status;
++
++	status = i2c_master_send(client, buf, 3);
++	return (status < 0) ? status : 0;
++}
++
++static int i2c_read_le24(struct i2c_client *client, u64 *data)
++{
++	u8 buf[6];
++	int status;
++
++	status = i2c_master_recv(client, buf, 3);
++	if (status < 0)
++		return status;
++
++	*data = ((u64)buf[2] << 16) | ((u64)buf[1] << 8) | (u64)buf[0];
++
++	return status;
++}
++
++/* Talk to 48-bit I/O expander */
++
++static int i2c_write_le48(struct i2c_client *client, u64 word)
++{
++	u8 buf[6] = { word & 0xff, (word >> 8) & 0xff, (word >> 16) & 0xff, (word >> 24) & 0xff, (word >> 32) & 0xff,  (word >> 40) & 0xff, };
++	int status;
++
++	status = i2c_master_send(client, buf, 6);
++	return (status < 0) ? status : 0;
++}
++
++static int i2c_read_le48(struct i2c_client *client, u64 *data)
++{
++	u8 buf[6];
++	int status;
++
++	status = i2c_master_recv(client, buf, 6);
++	if (status < 0)
++		return status;
++
++	*data = ((u64)buf[5] << 40) | ((u64)buf[4] << 32) | ((u64)buf[3] << 24) | ((u64)buf[2] << 16) | ((u64)buf[1] << 8) | (u64)buf[0];
++
++	return status;
+ }
+ 
+ /*-------------------------------------------------------------------------*/
+@@ -126,7 +208,7 @@ static int pcf857x_input(struct gpio_chip *chip, unsigned offset)
+ 	int		status;
+ 
+ 	mutex_lock(&gpio->lock);
+-	gpio->out |= (1 << offset);
++	gpio->out |= (1ULL << offset);
+ 	status = gpio->write(gpio->client, gpio->out);
+ 	mutex_unlock(&gpio->lock);
+ 
+@@ -136,16 +218,18 @@ static int pcf857x_input(struct gpio_chip *chip, unsigned offset)
+ static int pcf857x_get(struct gpio_chip *chip, unsigned offset)
+ {
+ 	struct pcf857x	*gpio = gpiochip_get_data(chip);
+-	int		value;
++	u64		value;
++	int		status;
++
++	status = gpio->read(gpio->client, &value);
+ 
+-	value = gpio->read(gpio->client);
+-	return (value < 0) ? value : !!(value & (1 << offset));
++	return (status < 0) ? status : !!(value & (1ULL << offset));
+ }
+ 
+ static int pcf857x_output(struct gpio_chip *chip, unsigned offset, int value)
+ {
+ 	struct pcf857x	*gpio = gpiochip_get_data(chip);
+-	unsigned	bit = 1 << offset;
++	u64	bit = 1ULL << offset;
+ 	int		status;
+ 
+ 	mutex_lock(&gpio->lock);
+@@ -169,17 +253,19 @@ static void pcf857x_set(struct gpio_chip *chip, unsigned offset, int value)
+ static irqreturn_t pcf857x_irq(int irq, void *data)
+ {
+ 	struct pcf857x  *gpio = data;
+-	unsigned long change, i, status;
++	u64 value;
++	unsigned long change;
++	int status, i;
+ 
+-	status = gpio->read(gpio->client);
++	status = gpio->read(gpio->client, &value);
+ 
+ 	/*
+ 	 * call the interrupt handler iff gpio is used as
+ 	 * interrupt source, just to avoid bad irqs
+ 	 */
+ 	mutex_lock(&gpio->lock);
+-	change = (gpio->status ^ status) & gpio->irq_enabled;
+-	gpio->status = status;
++	change = (gpio->status ^ value) & gpio->irq_enabled;
++	gpio->status = value;
+ 	mutex_unlock(&gpio->lock);
+ 
+ 	for_each_set_bit(i, &change, gpio->chip.ngpio)
+@@ -197,21 +283,32 @@ static int pcf857x_irq_set_wake(struct irq_data *data, unsigned int on)
+ {
+ 	struct pcf857x *gpio = irq_data_get_irq_chip_data(data);
+ 
+-	return irq_set_irq_wake(gpio->client->irq, on);
++	int error = 0;
++
++	if (gpio->irq_parent) {
++		error = irq_set_irq_wake(gpio->irq_parent, on);
++		if (error) {
++			dev_dbg(&gpio->client->dev,
++				"irq %u doesn't support irq_set_wake\n",
++				gpio->irq_parent);
++			gpio->irq_parent = 0;
++		}
++	}
++	return error;
+ }
+ 
+ static void pcf857x_irq_enable(struct irq_data *data)
+ {
+ 	struct pcf857x *gpio = irq_data_get_irq_chip_data(data);
+ 
+-	gpio->irq_enabled |= (1 << data->hwirq);
++	gpio->irq_enabled |= (1ULL << data->hwirq);
+ }
+ 
+ static void pcf857x_irq_disable(struct irq_data *data)
+ {
+ 	struct pcf857x *gpio = irq_data_get_irq_chip_data(data);
+ 
+-	gpio->irq_enabled &= ~(1 << data->hwirq);
++	gpio->irq_enabled &= ~(1ULL << data->hwirq);
+ }
+ 
+ static void pcf857x_irq_bus_lock(struct irq_data *data)
+@@ -238,6 +335,7 @@ static int pcf857x_probe(struct i2c_client *client,
+ 	struct pcf857x			*gpio;
+ 	unsigned int			n_latch = 0;
+ 	int				status;
++	u64 value;
+ 
+ 	if (IS_ENABLED(CONFIG_OF) && np)
+ 		of_property_read_u32(np, "lines-initial-states", &n_latch);
+@@ -301,7 +399,28 @@ static int pcf857x_probe(struct i2c_client *client,
+ 
+ 		/* fail if there's no chip present */
+ 		else
+-			status = i2c_read_le16(client);
++			status = i2c_read_le16(client, &value);
++	} else if (gpio->chip.ngpio == 24) {
++		gpio->write	= i2c_write_le24;
++		gpio->read	= i2c_read_le24;
++
++		if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C))
++			status = -EIO;
++
++		/* fail if there's no chip present */
++		else
++			status = i2c_read_le24(client, &value);
++
++	} else if (gpio->chip.ngpio == 48) {
++		gpio->write	= i2c_write_le48;
++		gpio->read	= i2c_read_le48;
++
++		if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C))
++			status = -EIO;
++
++		/* fail if there's no chip present */
++		else
++			status = i2c_read_le48(client, &value);
+ 
+ 	} else {
+ 		dev_dbg(&client->dev, "unsupported number of gpios\n");
+@@ -311,7 +430,8 @@ static int pcf857x_probe(struct i2c_client *client,
+ 	if (status < 0)
+ 		goto fail;
+ 
+-	gpio->chip.label = client->name;
++	if(of_property_read_string(np, "label", &gpio->chip.label))
++		gpio->chip.label = client->name;
+ 
+ 	gpio->client = client;
+ 	i2c_set_clientdata(client, gpio);
+@@ -332,21 +452,21 @@ static int pcf857x_probe(struct i2c_client *client,
+ 	 * reset state.  Otherwise it flags pins to be driven low.
+ 	 */
+ 	gpio->out = ~n_latch;
+-	gpio->status = gpio->read(gpio->client);
++	gpio->status = gpio->out;
+ 
+ 	/* Enable irqchip if we have an interrupt */
+ 	if (client->irq) {
+-		struct gpio_irq_chip *girq;
+-
+-		gpio->irqchip.name = "pcf857x";
+-		gpio->irqchip.irq_enable = pcf857x_irq_enable;
+-		gpio->irqchip.irq_disable = pcf857x_irq_disable;
+-		gpio->irqchip.irq_ack = noop;
+-		gpio->irqchip.irq_mask = noop;
+-		gpio->irqchip.irq_unmask = noop;
+-		gpio->irqchip.irq_set_wake = pcf857x_irq_set_wake;
+-		gpio->irqchip.irq_bus_lock = pcf857x_irq_bus_lock;
+-		gpio->irqchip.irq_bus_sync_unlock = pcf857x_irq_bus_sync_unlock;
++        struct gpio_irq_chip *girq;
++
++        gpio->irqchip.name = "pcf857x";
++        gpio->irqchip.irq_enable = pcf857x_irq_enable;
++        gpio->irqchip.irq_disable = pcf857x_irq_disable;
++        gpio->irqchip.irq_ack = noop;
++        gpio->irqchip.irq_mask = noop;
++        gpio->irqchip.irq_unmask = noop;
++        gpio->irqchip.irq_set_wake = pcf857x_irq_set_wake;
++        gpio->irqchip.irq_bus_lock = pcf857x_irq_bus_lock;
++        gpio->irqchip.irq_bus_sync_unlock = pcf857x_irq_bus_sync_unlock;
+ 
+ 		status = devm_request_threaded_irq(&client->dev, client->irq,
+ 					NULL, pcf857x_irq, IRQF_ONESHOT |
+@@ -355,20 +475,21 @@ static int pcf857x_probe(struct i2c_client *client,
+ 		if (status)
+ 			goto fail;
+ 
+-		girq = &gpio->chip.irq;
+-		girq->chip = &gpio->irqchip;
+-		/* This will let us handle the parent IRQ in the driver */
+-		girq->parent_handler = NULL;
+-		girq->num_parents = 0;
+-		girq->parents = NULL;
+-		girq->default_type = IRQ_TYPE_NONE;
+-		girq->handler = handle_level_irq;
+-		girq->threaded = true;
++        girq = &gpio->chip.irq;
++        girq->chip = &gpio->irqchip;
++        /* This will let us handle the parent IRQ in the driver */
++        girq->parent_handler = NULL;
++        girq->num_parents = 0;
++        girq->parents = NULL;
++        girq->default_type = IRQ_TYPE_NONE;
++        girq->handler = handle_level_irq;
++        girq->threaded = true;
+ 	}
+ 
+-	status = devm_gpiochip_add_data(&client->dev, &gpio->chip, gpio);
+-	if (status < 0)
+-		goto fail;
++    status = devm_gpiochip_add_data(&client->dev, &gpio->chip, gpio);
++    if (status < 0) {
++        goto fail;
++    }
+ 
+ 	/* Let platform code set up the GPIOs and their users.
+ 	 * Now is the first time anyone could use them.

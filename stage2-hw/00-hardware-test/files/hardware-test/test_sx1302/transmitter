@@ -1,0 +1,78 @@
+#!/bin/bash
+
+interface="spi"
+slot="slot1"
+
+Help()
+{
+   # Display Help
+   echo "Usage: sudo ./transmitter [OPTION]"
+   echo ""
+   echo "Options:"
+   echo "  -h,--help  Print this Help"
+   echo "  -i,--interface  <usb|spi> the sx1302 interface, default value is spi"
+   echo "  -s,--slot  <slot1|slot2>  the minipcie slot, default value is slot1"
+   echo ""
+}
+
+
+SHORT=i:s:h
+LONG=interface:slot:help
+OPTS=$(getopt --options $SHORT --longoptions $LONG -- "$@")
+
+if [ $? -ne 0 ]; then
+	Help
+    exit
+fi
+
+eval set -- "$OPTS"
+
+while :
+do
+   case $1 in
+      -h | --help)
+         Help
+         exit
+         ;;
+      -i | --interface)
+         interface=$2
+         shift 2
+         ;;
+      -s | --slot)
+         slot=$2
+         shift 2
+         ;;
+      --)
+         shift;
+         break
+         ;;
+   esac
+done
+
+if [ "$interface" == "usb" ]; 
+then
+	pushd ./bin
+	./test_loragw_hal_tx -u -d "/dev/ttyACM0" -k 0 -c 0 -r 1250 -f 867.5 -m LORA -s 7 -b 125 -n 1000 -z 10 -t 3000 --pa 1 --pwid 0
+	popd
+
+elif [ "$interface" == "spi" ]; 
+then
+	if [ "$slot" == "slot1" ];
+	then
+		pushd ./bin
+		sed -i "s/SX1302_RESET_PIN=6/SX1302_RESET_PIN=17/g" ./reset_lgw.sh
+		./test_loragw_hal_tx -d "/dev/spidev0.0" -k 0 -c 0 -r 1250 -f 867.5 -m LORA -s 7 -b 125 -n 1000 -z 10 -t 3000 --pa 1 --pwid 0
+		popd
+	elif [ "$slot" == "slot2" ];
+	then
+		pushd ./bin
+        sed -i "s/SX1302_RESET_PIN=17/SX1302_RESET_PIN=6/g" ./reset_lgw.sh        
+		./test_loragw_hal_tx -d "/dev/spidev0.1" -k 0 -c 0 -r 1250 -f 867.5 -m LORA -s 7 -b 125 -n 1000 -z 10 -t 3000 --pa 1 --pwid 0
+		popd
+	else
+		ehco "invalid slot:$slot"
+	fi
+else
+	echo "invalid interface: $interface"
+fi
+

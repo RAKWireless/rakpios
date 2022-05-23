@@ -1,0 +1,7 @@
+build-essential
+python-dev
+python3-smbus
+python3-pip
+libjpeg62-turbo-dev
+iperf3
+hwinfo

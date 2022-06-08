@@ -26,7 +26,7 @@ if [[ ${KERNEL_BUILD:-0} -eq 1 ]]; then
 
     # Apply configuration
     ./make default
-    cp -f ${ARCH}.config linux/.config
+    #cp -f ${ARCH}.config linux/.config
 
     # Build
     ./make build

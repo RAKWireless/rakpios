@@ -6,8 +6,6 @@ import board
 import digitalio
 from PIL import Image, ImageDraw, ImageFont
 import adafruit_ssd1306
-# import gpiod
-from datetime import timedelta
 import sys
 import threading
 import netifaces

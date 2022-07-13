@@ -2,7 +2,7 @@
 
 # Set variables
 portainer_version=2.14.0
-portainer_template_url=https://raw.githubusercontent.com/Sheng-IoT/Portainer_Templates/main/portainer_app_template.json
+portainer_template_url=https://raw.githubusercontent.com/RAKWireless/portainer-templates/master/portainer_app_template.json
 # Bcrypt-encrypted password, plain text is "changeme"
 portainer_password=\$2y\$05\$CamDlWaqdhRQvy1AuOZlY.4QYi/GptU6lDruXD0YiYiwQljGJmamC
 portainer_name=portainer

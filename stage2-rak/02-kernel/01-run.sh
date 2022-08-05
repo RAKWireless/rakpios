@@ -26,7 +26,7 @@ if [[ ${KERNEL_BUILD:-0} -eq 1 ]]; then
 
     # Apply configuration
     ./make default
-    #cp -f ${ARCH}.config linux/.config
+    cp -f ${ARCH}.config linux/.config
 
     # Build
     ./make build
@@ -58,9 +58,13 @@ popd >> /dev/null
 wget https://wireless.wiki.kernel.org/_media/en/users/drivers/iwlwifi-ty-59.601f3a66.0.tgz
 wget https://wireless.wiki.kernel.org/_media/en/users/drivers/iwlwifi/iwlwifi-qu-48.13675109.0.tgz
 wget https://wireless.wiki.kernel.org/_media/en/users/drivers/iwlwifi/iwlwifi-cc-46.3cfab8da.0.tgz
+wget https://anduin.linuxfromscratch.org/sources/linux-firmware/intel/ibt-0041-0041.sfi
+wget https://anduin.linuxfromscratch.org/sources/linux-firmware/intel/ibt-0041-0041.ddc
+
 mkdir firmware
 for package in `ls *.tgz`; do 
     tar -xzf $package -C firmware/
 done
 cp firmware/*/iwlwifi-*.ucode "${ROOTFS_DIR}/lib/firmware"
-rm -rf iwlwifi* firmware
+cp ibt-0041-0041.* "${ROOTFS_DIR}/lib/firmware/intel"
+rm -rf iwlwifi* firmware ibt-0041-0041.*

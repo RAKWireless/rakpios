@@ -1,10 +1,10 @@
-network-manager=1.30.0-2
-python3-pip=20.3.4-4+rpt1
+network-manager=1.30.*
+python3-pip=20.3.4*
 rng-tools=5migrate1
 apt-transport-https=2.2.4
 ca-certificates=20210119
-curl=7.74.0-1.3+deb11u1
-gnupg=2.2.27-2+deb11u1
+curl=7.74.0-1.3*
+gnupg=2.2.*
 vim=2:8.2.2434-3+deb11u1
 git=1:2.30.2-1
 figlet=2.2.5-3

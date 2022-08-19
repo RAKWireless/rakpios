@@ -23,7 +23,7 @@ HEIGHT = 64
 BORDER = 5
 DELAY = 5
 MARGIN = 2
-
+ROTATE = 0
 
 # -----------------------------------------------------------------------------
 # Pages
@@ -265,6 +265,8 @@ def show_page(page):
 
     # Update screen
     oled.fill(0)
+    if ROTATE == 1:
+        image = image.rotate(180, Image.NEAREST)
     oled.image(image)
     oled.show()
 

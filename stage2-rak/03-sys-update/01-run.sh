@@ -42,3 +42,5 @@ EOF
 cp files/update-motd.d/* "${ROOTFS_DIR}/etc/update-motd.d/"
 rm -rf "${ROOTFS_DIR}/etc/update-motd.d/10-uname"
 
+# Set wwan0 to raw IP mode when using BG96
+cp files/wwan0.sh "${ROOTFS_DIR}/etc/NetworkManager/dispatcher.d/pre-up.d/"

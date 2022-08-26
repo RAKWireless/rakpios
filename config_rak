@@ -1,10 +1,8 @@
 # Original configuration tags
 ARCH=arm64
-VERSION=0.5.1
+VERSION=0.5.2
 IMG_NAME="rakpios-${VERSION}-${ARCH}"
 TARGET_HOSTNAME="rakpios"
-FIRST_USER_NAME="rak"
-FIRST_USER_PASS="rakpios"
 ENABLE_SSH=1
 STAGE_LIST="stage0 stage1 stage2 stage2-rak"
 IMG_DATE=$( date +%Y%m%d )

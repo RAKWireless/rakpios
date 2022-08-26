@@ -203,7 +203,7 @@ fi
 export USE_QEMU="${USE_QEMU:-0}"
 export IMG_DATE="${IMG_DATE:-"$(date +%Y-%m-%d)"}"
 export IMG_FILENAME="${IMG_FILENAME:-"${IMG_DATE}-${IMG_NAME}"}"
-export ZIP_FILENAME="${ZIP_FILENAME:-"image_${IMG_DATE}-${IMG_NAME}"}"
+export ZIP_FILENAME="${ZIP_FILENAME:-"${IMG_FILENAME}"}"
 
 export SCRIPT_DIR="${BASE_DIR}/scripts"
 export WORK_DIR="${WORK_DIR:-"${BASE_DIR}/work/${IMG_NAME}"}"
@@ -271,6 +271,10 @@ else
 fi
 
 export NO_PRERUN_QCOW2="${NO_PRERUN_QCOW2:-1}"
+
+export ARCH=${ARCH:-"arm64"}
+export KERNEL_BUILD=${KERNEL_BUILD:-0}
+export KERNEL_CACHED=${KERNEL_CACHED:-0}
 
 dependencies_check "${BASE_DIR}/depends"
 

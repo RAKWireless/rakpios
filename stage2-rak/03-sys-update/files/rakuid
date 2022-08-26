@@ -1,0 +1,8 @@
+#!/usr/bin/bash
+if [[ ! -z "$RAKUID" ]]; 
+then
+    echo $RAKUID
+else
+    echo "error, RAKUID is not set"
+fi
+

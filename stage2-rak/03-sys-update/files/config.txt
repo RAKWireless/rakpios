@@ -53,7 +53,7 @@
 dtparam=audio=on
 
 # Automatically load overlays for detected cameras
-camera_auto_detect=1
+#camera_auto_detect=1
 
 # Automatically load overlays for detected DSI displays
 display_auto_detect=1
@@ -101,6 +101,15 @@ dtoverlay=pca953x,addr=0x27,pca9555
 #   ant2: External antenna
 #   noant: Disable both antennas
 dtparam=ant1
+
+# Enable dual Raspberry Pi Camera Module 2 and one display (this is specific to the RAK7391)
+# 1. Disable automatically load overlays for detected cameras
+#camera_auto_detect=0
+# 2. Manually load overlays for dual cameras
+#dtoverlay=imx219,cam1
+#dtoverlay=imx219,cam0
+# 3. Run "sudo wget https://datasheets.raspberrypi.com/cmio/dt-blob-disp1-cam2.bin -O /boot/dt-blob.bin" to enable dual cameras and display.
+# 4. No need to add jumpers, just reboot for the dt-blob.bin file to be read
 
 [all]
 

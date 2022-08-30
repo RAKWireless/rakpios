@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Set variables
-portainer_version=2.11.0
-portainer_template_url=https://raw.githubusercontent.com/Sheng-IoT/Portainer_Templates/main/portainer_app_template.json
+portainer_version=2.14.0
+portainer_template_url=https://raw.githubusercontent.com/RAKWireless/portainer-templates/master/portainer_app_template.json
 # Bcrypt-encrypted password, plain text is "changeme"
 portainer_password=\$2y\$05\$CamDlWaqdhRQvy1AuOZlY.4QYi/GptU6lDruXD0YiYiwQljGJmamC
 portainer_name=portainer
@@ -13,18 +13,18 @@ W="\e[0;39m"
 Help()
 {
    # Display Help
-   echo "Usage: portainer [-up] [-down] [-help] [-v argument] [-t argument]"
-   echo 
-   echo "Option up/down is mandatory, use portainer -up to start portainer, or use portainer -down to stop portainer" 
-   echo "Options [-v] and [-t] are for portainer version and portainer template "
-   echo
-   echo "options:"
-   echo "-up  Start portainer service"
-   echo "-down  Stop portainer service"
-   echo "-help  Print this Help"
-   echo "-v <portainer image version>  define a specific version of portainer you want to deploy" 
-   echo "-t <portainer app template url>  define a specific portainer app template to start with"
-   echo
+   echo ""
+   echo "Usage: portainer [OPTION] COMMAND"
+   echo "" 
+   echo "Options:"
+   echo "  -h,--help  Print this Help"
+   echo "  -v <portainer image version> define a specific version of portainer you want to deploy" 
+   echo "  -t <portainer app template url>  define a specific portainer app template to start with"
+   echo ""
+   echo "Commands:"
+   echo "  up    Start portainer service"
+   echo "  down  Stop portainer service"
+   echo ""	
 }
 
 Get_IP()
@@ -91,13 +91,19 @@ Down()
       echo "Failed to stop portainer"
    else
       echo "$portainer_name is stopped."
-      echo "Run portainer -up again to start the service."
+      echo "Run portainer up again to start the service."
    fi
 }
 
-SHORT=:v:,t:,h
-LONG=up,down,help
-OPTS=$(getopt -a --options $SHORT --longoptions $LONG -- "$@")
+SHORT=v:t:h
+LONG=help
+OPTS=$(getopt --options $SHORT --longoptions $LONG -- "$@")
+
+if [ $? -ne 0 ]; then
+	Help
+    exit
+fi
+ 
 eval set -- "$OPTS"
 
 while :
@@ -115,36 +121,29 @@ do
          portainer_template_url=$2
          shift 2
          ;;
-      --up) # Bring up portainer service
-         shift;
-         portainer_status=up
-         ;;
-      --down) # Stop portainer service
-         shift;
-         portainer_status=down
-         ;;
       --)
          shift;
          break
          ;;
-      *)
-         echo "Unexpected option: $1"
-         exit
-         ;;
    esac
 done
 
-if [ "$portainer_status" == "up" ];
+if [ $# != 1 ]
+then
+    echo "one command 'up' or 'down' is required"
+    Help
+    exit
+fi
+
+if [ "$1" == "up" ];
 then 
     Up
     exit
-elif [ "$portainer_status" == "down" ];
+elif [ "$1" == "down" ];
 then
     Down
     exit
 else
+    echo "invalid command: $1"
     Help
 fi
-
-
-

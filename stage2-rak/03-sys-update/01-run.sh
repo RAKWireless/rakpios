@@ -33,12 +33,15 @@ COMMIT_DATE="${COMMIT_DATE:-$(git log -1 --format=%ad --date=short)}"
 IMAGE_DATE="$(date +%Y-%m-%d)"
 EOL
 
-# Force user to change password after first login
-on_chroot << EOF
-passwd -e $FIRST_USER_NAME
-EOF
-
 # Update MOTD
 cp files/update-motd.d/* "${ROOTFS_DIR}/etc/update-motd.d/"
 rm -rf "${ROOTFS_DIR}/etc/update-motd.d/10-uname"
+
+# Set wwan0 to raw IP mode when using BG96
+cp files/wwan0.sh "${ROOTFS_DIR}/etc/NetworkManager/dispatcher.d/pre-up.d/"
+
+# Disable dhcpcd because NetworkManager already has a DHCP client
+on_chroot << EOF
+systemctl disable dhcpcd
+EOF
 

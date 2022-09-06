@@ -33,6 +33,12 @@ COMMIT_DATE="${COMMIT_DATE:-$(git log -1 --format=%ad --date=short)}"
 IMAGE_DATE="$(date +%Y-%m-%d)"
 EOL
 
+# Force user to change password after first login
+on_chroot << EOF
+passwd -e $FIRST_USER_NAME
+echo "rak ALL=(ALL) PASSWD: ALL" > /etc/sudoers.d/010_pi-nopasswd
+EOF
+
 # Update MOTD
 cp files/update-motd.d/* "${ROOTFS_DIR}/etc/update-motd.d/"
 rm -rf "${ROOTFS_DIR}/etc/update-motd.d/10-uname"

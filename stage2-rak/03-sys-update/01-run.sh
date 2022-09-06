@@ -36,7 +36,7 @@ EOL
 # Force user to change password after first login
 on_chroot << EOF
 passwd -e $FIRST_USER_NAME
-echo "rak ALL=(ALL) PASSWD: ALL" > /etc/sudoers.d/010_pi-nopasswd
+echo "$FIRST_USER_NAME ALL=(ALL) PASSWD: ALL" > /etc/sudoers.d/010_pi-nopasswd
 EOF
 
 # Update MOTD

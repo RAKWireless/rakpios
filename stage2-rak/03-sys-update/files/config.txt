@@ -85,7 +85,7 @@ dtparam=spi=on
 dtoverlay=i2c-rtc,pcf85063a
 
 # Enable onboard GPIO Expander TPT29555(compatible with PCA9555,this is specific to the RAK7391)
-dtoverlay=pca953x,addr=0x23,pca9555
+dtoverlay=pca953x,addr=0x26,pca9555
 dtoverlay=pca953x,addr=0x27,pca9555
 
 # Enable onboard ADS1115 (this is specific to the RAK7391)

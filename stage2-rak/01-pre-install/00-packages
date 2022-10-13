@@ -11,4 +11,4 @@ figlet=2.2.5-3
 i2c-tools=4.2-1+b1
 jq=1.6-2.1
 gpiod=1.6.2-1
-systemd-timesyncd=247.3-7
+systemd-timesyncd

@@ -5,12 +5,11 @@ ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get -y update && \
     apt-get -y install --no-install-recommends \
-        # utils
-        build-essential binfmt-support ca-certificates fdisk vim libffi-dev \
-        # pi-gen (based on `depends` file)
-        quilt parted coreutils qemu-user-static debootstrap zerofree zip dosfstools libcap2-bin libarchive-tools grep rsync udev xz-utils curl xxd file git kmod bc qemu-utils kpartx gpg pigz \
+        # pi-gen (based on upstream Dockerfile)
+        git vim parted quilt coreutils qemu-user-static debootstrap zerofree zip dosfstools libarchive-tools libcap2-bin \
+        rsync grep udev xz-utils curl xxd file kmod bc binfmt-support ca-certificates qemu-utils kpartx fdisk gpg pigz \
         # kernel (unzip cached files or build it)
-        unzip bison flex libssl-dev libc6-dev libncurses5-dev crossbuild-essential-armhf crossbuild-essential-arm64 \
+        build-essential libffi-dev unzip bison flex libssl-dev libc6-dev libncurses5-dev crossbuild-essential-armhf crossbuild-essential-arm64 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY . /pi-gen/

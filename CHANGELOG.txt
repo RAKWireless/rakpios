@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2022-10-19
+
+### Changed
+- Based on 2022-09-22-raspios-bullseye (but keeping default user as 'rak' with 'changeme' as initial password and force change it on first login)
+- Set GPIO expanders I2C addresses to 0x26 and 0x27
+- Enable SPI and I2C on all devices (not only for CM4)
+- MOTD does not show docker section if there is no container running
+- Changes in docker build scripts
+
+### Added
+- Force user to type password for sudo access
+
 ## [0.5.2] - 2022-08-26
 
 ### Changed

@@ -45,7 +45,6 @@ else
 	source ${CONFIG_FILE}
 fi
 
-DEPLOY_DIR="deploy"
 CONTAINER_NAME=${CONTAINER_NAME:-pigen_work}
 CONTINUE=${CONTINUE:-0}
 PRESERVE_CONTAINER=${PRESERVE_CONTAINER:-0}
@@ -94,7 +93,7 @@ if [ "${CONTAINER_EXISTS}" != "" ]; then
 	# binfmt_misc is sometimes not mounted with debian bullseye image
 	(mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc || true) &&
 	cd /pi-gen; ./build.sh ${BUILD_OPTS} &&
-	rsync -av work/*/build.log ${DEPLOY_DIR}/" &
+	rsync -av work/*/build.log deploy/" &
 	wait "$!"
 else
 	trap 'echo "got CTRL+C... please wait 5s" && ${DOCKER} stop -t 5 ${CONTAINER_NAME}' SIGINT SIGTERM
@@ -111,11 +110,12 @@ else
 	# binfmt_misc is sometimes not mounted with debian bullseye image
 	(mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc || true) &&
 	cd /pi-gen; ./build.sh ${BUILD_OPTS} &&
-	rsync -av work/*/build.log ${DEPLOY_DIR}/" &
+	rsync -av work/*/build.log deploy/" &
 	wait "$!"
 fi
 
-${DOCKER} cp ${CONTAINER_NAME}:/pi-gen/${DEPLOY_DIR} build
+rm -rf build
+${DOCKER} cp ${CONTAINER_NAME}:/pi-gen/deploy build
 ${DOCKER} cp ${CONTAINER_NAME}:/pi-gen/stage2-rak/02-kernel/files/${ARCH}.kernel.zip build/${ARCH}.kernel.zip
 ls -lah build
 

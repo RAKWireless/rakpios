@@ -24,7 +24,7 @@ else
     echo "RAKUID=$(get_RAKUID 2>&1)" >> /etc/environment
 fi
 
-#Dispaly basic info on oled screen
+# Display basic info on oled screen
 /bin/oled &
 
 exit 0

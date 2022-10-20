@@ -1,16 +1,17 @@
-# Original configuration tags
 ARCH=arm64
+NAME="rakpios"
 VERSION=0.6.0
-IMG_NAME="rakpios-${VERSION}-${ARCH}"
-TARGET_HOSTNAME="rakpios"
+
+TARGET_HOSTNAME="${NAME}"
+IMG_DATE=$( date +%Y%m%d )
+IMG_NAME="${NAME}-${VERSION}-${ARCH}"
+ARCHIVE_FILENAME="${IMG_DATE}-${IMG_NAME}"
 FIRST_USER_NAME=rak
 FIRST_USER_PASS=changeme
 DISABLE_FIRST_BOOT_USER_RENAME=1
 ENABLE_SSH=1
 STAGE_LIST="stage0 stage1 stage2 stage2-rak"
-IMG_DATE=$( date +%Y%m%d )
 
-# Custom configuration tags
 PI_GEN_REPO=https://github.com/RAKWireless/rakpios
 KERNEL_BUILD=0
 KERNEL_CACHED=1

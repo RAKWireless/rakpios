@@ -1,4 +1,3 @@
-network-manager=1.30.*
 python3-pip=20.3.4*
 rng-tools=5migrate1
 apt-transport-https=2.2.4

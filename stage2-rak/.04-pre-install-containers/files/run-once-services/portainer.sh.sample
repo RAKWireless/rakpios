@@ -1,0 +1,16 @@
+#!/bin/bash -e
+
+# This script is an example for simple service using only one image
+
+# Load ssaved images
+docker load < /usr/local/etc/images/image-tar-portainer.tar
+
+# Set variables
+portainer_version=2.16.0
+portainer_template_url=https://raw.githubusercontent.com/RAKWireless/portainer-templates/master/portainer_app_template.json
+# Bcrypt-encrypted password, plain text is "changeme"
+portainer_password=\$2y\$05\$CamDlWaqdhRQvy1AuOZlY.4QYi/GptU6lDruXD0YiYiwQljGJmamC
+portainer_name=portainer
+
+# Use docker run to start the service
+docker run -d -p 8000:8000 -p 9443:9443 --name=$portainer_name --restart=unless-stopped -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer-ce:$portainer_version --admin-password=$portainer_password --templates $portainer_template_url

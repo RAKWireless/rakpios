@@ -1,0 +1,22 @@
+#!/bin/bash -e
+
+# This is an example script, it load the UDP packet forwarder image and also do docker-compose up during first-boot
+
+# Load compressed image for the UDP packet forwarder
+docker load < /usr/local/etc/images/image-tar-udp.tar
+# docker-compose up
+docker compose -f /usr/local/etc/docker-compose-files/udp-packet-forwarder.yml up -d
+
+# Load compressed images for the TTS stack
+# docker load < /usr/local/etc/images/image-tar-tts-postgres.tar
+# docker load < /usr/local/etc/images/image-tar-tts-redis.tar
+# docker load < /usr/local/etc/images/image-tar-tts-stack.tar
+# docker-compose up
+# docker compose -f /usr/local/etc/docker-compose-files/the-things-stack.yml.yml up -d
+
+# You can add more container services here(e.g. basicstation packet forwarder), but make sure you load the necessary images first,
+# and then do the docker compose up
+# docker load < /usr/local/etc/images/image-tar-basicstation.tar
+# docker compose -f /usr/local/etc/docker-compose-files/basics-station-packet-forwarder.yml up -d
+
+

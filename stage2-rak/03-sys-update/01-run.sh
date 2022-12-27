@@ -8,8 +8,11 @@ cp files/get_RAKUID "${ROOTFS_DIR}/bin/get_RAKUID"
 #Add oled script
 cp files/oled "${ROOTFS_DIR}/bin/oled"
 
-# Add scripts
+# Add portainer up script
 cp files/portainer "${ROOTFS_DIR}/bin/portainer"
+
+# Add rakpios-cli
+curl https://raw.githubusercontent.com/RAKWireless/rakpios-cli/main/rakpios-cli -sSf | bash -s -- --install --silent
 
 # Update config.txt
 cp files/config.txt "${ROOTFS_DIR}/boot/"

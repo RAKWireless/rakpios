@@ -24,6 +24,10 @@ if [[ ${KERNEL_BUILD:-0} -eq 1 ]]; then
         popd >> /dev/null
     fi
 
+    # Add extra drivers
+    echo "Adding extra drivers ..."
+    ./make add drivers/tas2505
+
     # Apply configuration
     ./make default
     cp -f ${ARCH}.config linux/.config

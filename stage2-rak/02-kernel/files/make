@@ -6,6 +6,7 @@ usage() {
     echo ""
     echo "Commands:"
     echo " * init           : initializes or resets the linux kernel repository (run this the first time)"
+    echo " * add <path>     : add extra driver"
     echo " * default        : resets the configuration to defaults"
     echo " * config         : allows you to define a specific configuration"
     echo " * build          : builds the kernel based on the configuration in .config "
@@ -13,7 +14,7 @@ usage() {
     echo " * copy <folder>  : copies the kernel and modules to the given folder"
     echo ""
     echo "Environment variables:"
-    echo " * ARCH           : architecture to build the kernel for: 'armhf' or 'arm64' (current: ${ARCH})"
+    echo " * ARCH           : architecture to build the kernel for: 'arm' or 'arm64' (current: ${ARCH})"
     echo " * CORES          : number of cores used to build the kernel (current: ${CORES})"
     echo ""
     echo "Syntax: $0 [command]"
@@ -32,7 +33,7 @@ KERNEL_TAG=${KERNEL_TAG:-"rpi-5.15.y"}
 ARCH=${ARCH:-"arm64"}
 case ${ARCH} in
 
-    "armhf")
+    "arm")
         export COMPILER=arm-linux-gnueabihf-
         export IMAGE=zImage
         export KERNEL=kernel7l.img
@@ -45,7 +46,7 @@ case ${ARCH} in
         ;;
 
     *)
-        echo "Wrong architecture, supported values are 'armhf' or 'arm64'"
+        echo "Wrong architecture, supported values are 'arm' or 'arm64'"
         exit 1
         ;;
 
@@ -83,6 +84,7 @@ case ${OPTION} in
             popd >> /dev/null
         fi
         rm -rf modules
+
         ;;
 
     "default" )
@@ -99,6 +101,22 @@ case ${OPTION} in
 
         ;;
 
+    "add") 
+        if [ $#  -lt 2 ]; then
+            usage
+            exit 0
+        fi
+        DIR=$2
+        if [ ! -d $DIR ]; then
+            echo "ERROR: \"$DIR\" not found"
+            exit 1
+        fi
+        cp -r $DIR linux/drivers/
+        NAME=${DIR#*/}
+        echo "obj-y += $NAME/" >> linux/drivers/Makefile
+        sed "s/endmenu/source \"drivers\/$NAME\/Kconfig\"\nendmenu/" -i linux/drivers/Kconfig
+        ;;
+    
     "build" )
         rm -rf modules
         mkdir modules
@@ -158,7 +176,7 @@ case ${OPTION} in
         ;;
 
     *)
-        echo "Wrong command (${OPTION}), supported values are 'init', 'default', 'config', 'build' or 'copy'"
+        echo "Wrong command (${OPTION}), supported values are 'init', 'add', 'default', 'config', 'build', 'zip' or 'copy'"
         
         ;;
 

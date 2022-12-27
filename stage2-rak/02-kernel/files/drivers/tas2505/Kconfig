@@ -1,0 +1,9 @@
+config SND_SOC_TAS2505
+	tristate "Texas Instruments TAS2505"
+	select REGMAP
+	select REGMAP_I2C
+	select I2C
+	help
+	  Enable support Texas Instruments tas2505.
+	  To compile this driver as a module, choose M here.
+	  If unsure select "N".

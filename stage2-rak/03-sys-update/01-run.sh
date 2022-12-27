@@ -12,7 +12,9 @@ cp files/oled "${ROOTFS_DIR}/bin/oled"
 cp files/portainer "${ROOTFS_DIR}/bin/portainer"
 
 # Add rakpios-cli
-curl https://raw.githubusercontent.com/RAKWireless/rakpios-cli/main/rakpios-cli -sSf | bash -s -- --install --silent
+on_chroot << EOF
+runuser -l ${FIRST_USER_NAME} -c 'curl https://raw.githubusercontent.com/RAKWireless/rakpios-cli/main/rakpios-cli -sSf | bash -s -- --install --silent'
+EOF
 
 # Update config.txt
 cp files/config.txt "${ROOTFS_DIR}/boot/"

@@ -24,9 +24,9 @@ if [[ ${KERNEL_BUILD:-0} -eq 1 ]]; then
         popd >> /dev/null
     fi
 
-    # Add extra drivers
-    echo "Adding extra drivers ..."
-    ./make add drivers/tas2505
+    # Add extra components
+    echo "Adding extra components ..."
+    ./make add extra/sound/soc/tas2505 sound/soc
 
     # Apply configuration
     ./make default

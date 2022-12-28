@@ -18,6 +18,7 @@
 #include <linux/of.h>
 #include <linux/of_gpio.h>
 #include <sound/soc.h>
+#include <sound/soc-component.h>
 #include <sound/tlv.h>
 #include <sound/pcm_params.h>
 #include "tas2505.h"

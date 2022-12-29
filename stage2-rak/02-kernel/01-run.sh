@@ -17,16 +17,12 @@ if [[ ${KERNEL_BUILD:-0} -eq 1 ]]; then
     ./make init
 
     # Apply patches
-    if [ -f patches/${KERNEL_TAG}.patch ]; then
-        echo "Applying ${KERNEL_TAG}.patch ..."
-        pushd linux >> /dev/null
-        git apply ../patches/${KERNEL_TAG}.patch
-        popd >> /dev/null
+    if [ -d patches/${KERNEL_TAG} ]; then
+        for PATCH in `ls patches/${KERNEL_TAG}/*.patch`; do
+            echo "Applying ${PATCH} ..."
+            git apply --directory=linux ${PATCH}
+        done
     fi
-
-    # Add extra components
-    echo "Adding extra components ..."
-    ./make add extra/sound/soc/tas2505 sound/soc
 
     # Apply configuration
     ./make default

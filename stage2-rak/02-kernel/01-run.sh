@@ -28,7 +28,10 @@ if [[ ${KERNEL_BUILD:-0} -eq 1 ]]; then
     ./make default
     ./make set CONFIG_R8169 y
     ./make set CONFIG_REALTEK_PHY y
-
+    ./make set CONFIG_SND_SOC_TAS2505 y
+    ./make set CONFIG_SND_SOC_TLV320AIC3X m
+    ./make set CONFIG_SND_SOC_TLV320AIC3X_I2C m
+    
     # Build
     ./make build
     

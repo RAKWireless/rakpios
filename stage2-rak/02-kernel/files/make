@@ -7,7 +7,10 @@ usage() {
     echo "Commands:"
     echo " * init             : initializes or resets the linux kernel repository (run this the first time)"
     echo " * add <cmp> <path> : add extra component to given path"
+    echo " * patch <file>     : applies given patch file to the kernel source code"
     echo " * default          : resets the configuration to defaults"
+    echo " * set <name> <val> : adds or modifies the given name to the given value in the kernel .config file"
+    echo " * unset <name>     : unsets the given name in the kernel .config file"
     echo " * config           : allows you to define a specific configuration"
     echo " * build            : builds the kernel based on the configuration in .config "
     echo " * zip              : ZIPs all the required files, root folder is rootfs"
@@ -90,24 +93,10 @@ case ${OPTION} in
 
         ;;
 
-    "default" )
-        pushd linux >> /dev/null
-        ${MAKE} bcm2711_defconfig
-        popd >> /dev/null
-
-        ;;
-
-    "config" )
-        pushd linux >> /dev/null
-        ${MAKE} menuconfig
-        popd >> /dev/null
-
-        ;;
-
     "add") 
         if [ $#  -lt 3 ]; then
             usage
-            exit 0
+            exit 1
         fi
         COMPONENT=$2
         PATH=$3
@@ -123,8 +112,59 @@ case ${OPTION} in
         NAME=${COMPONENT##*/}
         echo "obj-y += ${NAME}/" >> linux/${PATH}/Makefile
         echo "source \"${PATH}/${NAME}/Kconfig\"" >> linux/${PATH}/Kconfig
+
         ;;
     
+    "patch" )
+        if [ $#  -lt 2 ]; then
+            usage
+            exit 1
+        fi
+        PATCH=$2
+        if [ ! -f ${PATCH} ]; then
+            echo "ERROR: \"${PATCH}\" not found"
+            exit 1
+        fi
+        git apply --directory=linux ${PATCH}
+
+        ;;
+
+    "default" )
+        pushd linux >> /dev/null
+        ${MAKE} bcm2711_defconfig
+        popd >> /dev/null
+
+        ;;
+
+    "config" )
+        pushd linux >> /dev/null
+        ${MAKE} menuconfig
+        popd >> /dev/null
+
+        ;;
+
+    "set")
+        if [ $#  -lt 3 ]; then
+            usage
+            exit 1
+        fi
+        NAME=$2
+        VALUE=$3
+        # This line replaces the existing key with the new value or appends the key=value pair to the end of the file
+        sed '/^[# ]*'${NAME}'[= ]/{h;s/.*/'${NAME}'='${VALUE}'/};${x;/^$/{s//'${NAME}'='${VALUE}'/;H};x}' -i linux/.config
+
+        ;;
+
+    "unset")
+        if [ $#  -lt 2 ]; then
+            usage
+            exit 1
+        fi
+        NAME=$2
+        sed 's/[# ]*'${NAME}'[= ].*/# '${NAME}' is not set/' -i linux/.config
+
+        ;;
+
     "build" )
         rm -rf modules
         mkdir modules
@@ -184,7 +224,7 @@ case ${OPTION} in
         ;;
 
     *)
-        echo "Wrong command (${OPTION}), supported values are 'init', 'add', 'default', 'config', 'build' or 'copy'"
+        echo "Wrong command (${OPTION}), supported values are 'init', 'add', 'patch', 'default', 'set', 'unset', 'config', 'build', 'zip' or 'copy'"
         
         ;;
 

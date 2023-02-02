@@ -7,7 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
-- rakpios-cli 0.1
+- Management tool: rakpios-cli 0.1.0
+
+### Changed
+- Simplified kernel builder
 
 ## [0.6.0] - 2022-10-19
 

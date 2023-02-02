@@ -20,13 +20,14 @@ if [[ ${KERNEL_BUILD:-0} -eq 1 ]]; then
     if [ -d patches/${KERNEL_TAG} ]; then
         for PATCH in `ls patches/${KERNEL_TAG}/*.patch`; do
             echo "Applying ${PATCH} ..."
-            git apply --directory=linux ${PATCH}
+            ./make patch ${PATCH}
         done
     fi
 
     # Apply configuration
     ./make default
-    cp -f ${ARCH}.config linux/.config
+    ./make set CONFIG_R8169 y
+    ./make set CONFIG_REALTEK_PHY y
 
     # Build
     ./make build

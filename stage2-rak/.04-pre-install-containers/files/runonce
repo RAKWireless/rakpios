@@ -1,0 +1,12 @@
+#!/bin/sh
+for file in /etc/local/runonce.d/*
+do
+    if [ ! -f "$file" ]
+    then
+        continue
+    fi
+    "$file"
+    new_file=$(echo ${file} | sed "s#runonce.d/#runonce.d/ran/#g")
+    mv "$file" "$new_file.$(date +%Y%m%dT%H%M%S)"
+    logger -t runonce -p local3.info "$file"
+done

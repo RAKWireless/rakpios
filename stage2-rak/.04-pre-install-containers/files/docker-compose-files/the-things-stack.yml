@@ -1,0 +1,72 @@
+version: '3.7'
+
+volumes:
+    redis: 
+    postgres:
+    stack-blob:
+    stack-data:
+
+services:
+
+  postgres:
+    image: postgres:11.12
+    container_name: postgres
+    restart: unless-stopped
+    environment:
+        - POSTGRES_PASSWORD=root
+        - POSTGRES_USER=root
+        - POSTGRES_DB=ttn_lorawan
+    volumes:
+        - 'postgres:/var/lib/postgresql/data'
+    ports:
+        - "127.0.0.1:5432:5432"
+    
+  redis:
+    image: redis:6.2.4-alpine3.13
+    container_name: redis
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    volumes:
+        - 'redis:/data'
+    ports:
+        - "127.0.0.1:6379:6379"
+  
+  stack:
+    image: xoseperez/the-things-stack:latest
+    container_name: stack
+    restart: unless-stopped
+    depends_on:
+        - redis
+        - postgres
+    volumes:
+        - 'stack-blob:/srv/ttn-lorawan/public/blob'
+        - 'stack-data:/srv/data'
+    environment:
+        - TZ=${TZ:-Europe/London}
+        - PUID=${PUID:-1000}
+        - PGID=${PGID:-100}
+        - TTS_DOMAIN=${TTS_DOMAIN:-127.0.0.1}     # set this to the IP or domain name of the host you will be using to access the stack
+        - TTN_LW_BLOB_LOCAL_DIRECTORY=/srv/ttn-lorawan/public/blob
+        - TTN_LW_REDIS_ADDRESS=redis:6379
+        - TTN_LW_IS_DATABASE_URI=postgres://root:root@postgres:5432/ttn_lorawan?sslmode=disable
+
+    ports:
+    
+        - "80:1885"
+        - "443:8885"
+    
+        - "1881:1881"
+        - "1882:1882"
+        - "1883:1883"
+        - "1884:1884"
+        - "1885:1885"
+        - "1887:1887"
+    
+        - "8881:8881"
+        - "8882:8882"
+        - "8883:8883"
+        - "8884:8884"
+        - "8885:8885"
+        - "8887:8887"
+    
+        - "1700:1700/udp"

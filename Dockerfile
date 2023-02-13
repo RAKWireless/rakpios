@@ -11,7 +11,7 @@ RUN apt-get -y update && \
         libarchive-tools libcap2-bin rsync grep udev xz-utils curl xxd file kmod bc\
         binfmt-support ca-certificates qemu-utils kpartx fdisk gpg pigz\
         # kernel (unzip cached files or build it)
-        build-essential libffi-dev unzip bison flex libssl-dev libc6-dev libncurses5-dev crossbuild-essential-armhf crossbuild-essential-arm64 \
+        jq build-essential libffi-dev unzip bison flex libssl-dev libc6-dev libncurses5-dev crossbuild-essential-armhf crossbuild-essential-arm64 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY . /pi-gen/

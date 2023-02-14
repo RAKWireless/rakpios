@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# Check current wireless network
+iwgetid -r
+
+if [ $? -eq 0 ]; then
+    printf "Skipping WiFi Connect\n"
+    break
+else
+    # Custom SSID & PASS
+    # Check if the wlan0 interface exists
+    if [ ! -d "/sys/class/net/wlan0" ]; then
+        echo "wlan0 interface does not exist."
+        break
+    else
+        IFACE=${IFACE:-"eth1"}
+        MAC=$(cat /sys/class/net/$IFACE/address | sed 's/://g' | tail -c 5)
+    fi
+    echo $MAC
+    SSID=${SSID:-"RAK_${MAC^^}"}
+    # PASS=${PASS:-"password-$MAC"}
+    PASS=${PASS:-"rakwireless"}
+    printf "Starting WiFi Connect (SSID: $SSID)\n"
+    wifi-connect --portal-ssid $SSID --portal-passphrase $PASS --portal-gateway 192.168.230.1 --portal-dhcp-range 192.168.230.2,192.168.230.254
+fi
+
+# Exit the script
+exit 0

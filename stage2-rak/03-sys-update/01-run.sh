@@ -38,6 +38,21 @@ COMMIT_DATE="${COMMIT_DATE:-$(git log -1 --format=%ad --date=short)}"
 IMAGE_DATE="$(date +%Y-%m-%d)"
 EOL
 
+# add create-AP service
+cp files/create-ap.service "${ROOTFS_DIR}/etc/systemd/system/"
+cp files/create-ap "${ROOTFS_DIR}/usr/local/bin/"
+tar xvzf files/wifi-connect-v4.4.6-linux-aarch64-rakwireless.tar.gz -C files/
+cp files/wifi-connect-v4.4.6-linux-aarch64-rakwireless/wifi-connect "${ROOTFS_DIR}/usr/local/sbin/"
+on_chroot << EOF
+mkdir -p /usr/local/share/wifi-connect/
+EOF
+cp -r files/wifi-connect-v4.4.6-linux-aarch64-rakwireless/ui "${ROOTFS_DIR}/usr/local/share/wifi-connect/"
+on_chroot << EOF
+systemctl daemon-reload
+systemctl enable create-ap
+EOF
+
+
 # Force user to change password after first login
 on_chroot << EOF
 passwd -e $FIRST_USER_NAME
@@ -55,4 +70,3 @@ cp files/wwan0.sh "${ROOTFS_DIR}/etc/NetworkManager/dispatcher.d/pre-up.d/"
 on_chroot << EOF
 systemctl disable dhcpcd
 EOF
-

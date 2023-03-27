@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Check current wireless network
-iwgetid -r
+# Check active connections
+nmcli connection show --active | tail -n +2 | grep -v docker >> /dev/nul
 
 if [ $? -eq 0 ]; then
     printf "Skipping WiFi Connect\n"

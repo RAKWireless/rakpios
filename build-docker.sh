@@ -115,8 +115,8 @@ else
 fi
 
 rm -rf build
-${DOCKER} cp ${CONTAINER_NAME}:/pi-gen/deploy build
-${DOCKER} cp ${CONTAINER_NAME}:/pi-gen/stage2-rak/02-kernel/files/${ARCH}.kernel.zip build/${ARCH}.kernel.zip
+${DOCKER} cp -q ${CONTAINER_NAME}:/pi-gen/deploy build
+${DOCKER} cp -q ${CONTAINER_NAME}:/pi-gen/stage2-rak/02-kernel/files/${ARCH}.kernel.zip build/${ARCH}.kernel.zip
 ls -lah build
 
 # cleanup

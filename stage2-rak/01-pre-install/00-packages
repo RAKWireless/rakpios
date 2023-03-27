@@ -11,3 +11,4 @@ i2c-tools=4.2-1+b1
 jq=1.6-2.1
 gpiod=1.6.2-1
 systemd-timesyncd
+tmux=3.1c-1+deb11u1

@@ -1,28 +1,26 @@
 #!/bin/bash
 
 # Check active connections
-nmcli connection show --active | tail -n +2 | grep -v docker >> /dev/nul
-
-if [ $? -eq 0 ]; then
-    printf "Skipping WiFi Connect\n"
-    break
-else
-    # Custom SSID & PASS
-    # Check if the wlan0 interface exists
-    if [ ! -d "/sys/class/net/wlan0" ]; then
-        echo "wlan0 interface does not exist."
-        break
-    else
-        IFACE=${IFACE:-"eth1"}
-        MAC=$(cat /sys/class/net/$IFACE/address | sed 's/://g' | tail -c 5)
-    fi
-    echo $MAC
-    SSID=${SSID:-"RAK_${MAC^^}"}
-    # PASS=${PASS:-"password-$MAC"}
-    PASS=${PASS:-"rakwireless"}
-    printf "Starting WiFi Connect (SSID: $SSID)\n"
-    wifi-connect --portal-ssid $SSID --portal-passphrase $PASS --portal-gateway 192.168.230.1 --portal-dhcp-range 192.168.230.2,192.168.230.254
+nmcli connection show --active | tail -n +2 | grep -v docker >> /dev/null
+if [[ $? -eq 0 ]]; then
+    echo "[wifi-connect] there is an active connection, skipping"
+    exit 0
+fi
+    
+# Check if the wlan0 interface exists
+if [[ -f /sys/class/net/wlan0 ]]; then
+    echo "[wifi-connect] wlan0 interface does not exist"
+    exit 1
 fi
 
-# Exit the script
+# Custom SSID & PASS
+IFACE=${IFACE:-"eth0"}
+MAC=$(cat /sys/class/net/$IFACE/address | sed 's/://g' | tail -c 5)
+SSID=${SSID:-"RAK_${MAC^^}"}
+PASS=${PASS:-"rakwireless"}
+
+# Start service
+echo "[wifi-connect] starting WiFi Connect (SSID: $SSID)"
+wifi-connect --portal-ssid $SSID --portal-passphrase $PASS --portal-gateway 192.168.230.1 --portal-dhcp-range 192.168.230.2,192.168.230.254
+
 exit 0

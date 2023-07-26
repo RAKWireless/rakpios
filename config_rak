@@ -1,6 +1,6 @@
 ARCH=arm64
 NAME="rakpios"
-VERSION=0.7.0
+VERSION=0.7.1
 
 TARGET_HOSTNAME="${NAME}"
 IMG_DATE=$( date +%Y%m%d )

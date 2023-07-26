@@ -28,6 +28,11 @@ if [[ ${KERNEL_BUILD:-0} -eq 1 ]]; then
     ./make default
     ./make set CONFIG_R8169 y
     ./make set CONFIG_REALTEK_PHY y
+    ./make set CONFIG_IWLWIFI m
+    ./make set CONFIG_IWLWIFI_LEDS y
+    ./make set CONFIG_IWLMVM m 
+    ./make set CONFIG_IWLWIFI_OPMODE_MODULAR y
+    ./make set CONFIG_IWLWIFI_DEVICE_TRACING y
 
     # Build
     ./make build

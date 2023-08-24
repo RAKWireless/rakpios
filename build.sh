@@ -21,7 +21,7 @@ EOF
 			PACKAGES="$(sed -f "${SCRIPT_DIR}/remove-comments.sed" < "${i}-packages-nr")"
 			if [ -n "$PACKAGES" ]; then
 				on_chroot << EOF
-apt-get -o APT::Acquire::Retries=3 install --no-install-recommends -y $PACKAGES
+apt-get -o Acquire::Retries=3 install --no-install-recommends -y $PACKAGES
 EOF
 				if [ "${USE_QCOW2}" = "1" ]; then
 					on_chroot << EOF
@@ -36,7 +36,7 @@ EOF
 			PACKAGES="$(sed -f "${SCRIPT_DIR}/remove-comments.sed" < "${i}-packages")"
 			if [ -n "$PACKAGES" ]; then
 				on_chroot << EOF
-apt-get -o APT::Acquire::Retries=3 install -y $PACKAGES
+apt-get -o Acquire::Retries=3 install -y $PACKAGES
 EOF
 				if [ "${USE_QCOW2}" = "1" ]; then
 					on_chroot << EOF
@@ -226,7 +226,7 @@ export TARGET_HOSTNAME=${TARGET_HOSTNAME:-raspberrypi}
 export FIRST_USER_NAME=${FIRST_USER_NAME:-pi}
 export FIRST_USER_PASS
 export DISABLE_FIRST_BOOT_USER_RENAME=${DISABLE_FIRST_BOOT_USER_RENAME:-0}
-export RELEASE=${RELEASE:-bullseye}
+export RELEASE=${RELEASE:-bullseye} # Don't forget to update stage0/prerun.sh
 export WPA_ESSID
 export WPA_PASSWORD
 export WPA_COUNTRY
@@ -288,6 +288,10 @@ export ARCH=${ARCH:-"arm64"}
 export KERNEL_BUILD=${KERNEL_BUILD:-0}
 export KERNEL_CACHED=${KERNEL_CACHED:-0}
 export KERNEL_TAG
+
+if [ "$SETFCAP" != "1" ]; then
+	export CAPSH_ARG="--drop=cap_setfcap"
+fi
 
 dependencies_check "${BASE_DIR}/depends"
 

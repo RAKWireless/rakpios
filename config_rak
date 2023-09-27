@@ -16,3 +16,4 @@ PI_GEN_REPO=https://github.com/RAKWireless/rakpios
 KERNEL_BUILD=0
 KERNEL_CACHED=1
 KERNEL_TAG=rpi-5.15.y
+DOCKER_EMBED_IMAGES=1

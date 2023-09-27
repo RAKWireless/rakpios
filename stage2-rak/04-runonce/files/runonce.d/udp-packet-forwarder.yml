@@ -1,0 +1,13 @@
+version: '2.0'
+
+services:
+
+  udp-packet-forwarder:
+    image: rakwireless/udp-packet-forwarder:latest
+    container_name: udp-packet-forwarder
+    restart: unless-stopped
+    privileged: true
+    network_mode: host
+    environment:
+      MODEL: "RAK5146"
+      RADIO_DEV: "ANY"

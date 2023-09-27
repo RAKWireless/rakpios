@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# Load images
+if [ -d in /usr/local/share/docker-images ]; then
+    for file in /usr/local/share/docker-images/*.tar; do
+        docker load < $file
+    done
+fi
+
+# Run services
+for file in /etc/local/runonce.d/*.sh; do
+    
+    # Run it
+    "$file"
+
+    # Mark it as ran
+    mv "$file" "$file.$(date +%Y%m%dT%H%M%S)"
+
+    # Log
+    logger -t runonce -p local3.info "$file"
+
+done

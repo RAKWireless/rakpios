@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Check active connections
-nmcli connection show --active | tail -n +2 | grep -v docker | grep -v br >> /dev/null
+nmcli --fields type connection show --active | tail -n +2 | grep -v bridge | grep -v loopback >> /dev/null
 if [[ $? -eq 0 ]]; then
     echo "[wifi-connect] there is an active connection, skipping"
     exit 0

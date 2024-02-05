@@ -2,17 +2,20 @@
 
 import signal
 import time
-import board
-import digitalio
-from PIL import Image, ImageDraw, ImageFont
-import adafruit_ssd1306
 import sys
 import threading
 import netifaces
-import psutil
 import re
 import subprocess
+import logging
+import docker
+
 import RPi.GPIO as GPIO
+from PIL import Image, ImageDraw, ImageFont
+
+from luma.core.interface.serial import i2c
+from luma.core.render import canvas
+from luma.oled.device import ssd1306
 
 # -----------------------------------------------------------------------------
 # Configuration
@@ -26,16 +29,49 @@ MARGIN = 2
 ROTATE = 0
 
 # -----------------------------------------------------------------------------
+# Utils
+# -----------------------------------------------------------------------------
+
+page_docker = 0
+
+def uptime():
+    
+    p = subprocess.run('cat /proc/uptime | cut -f1 -d" "', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    uptime = float(p.stdout.decode())
+
+    parts = []
+    uptime = int(uptime / 60)
+    parts.insert(0, uptime % 60)
+    uptime = int(uptime / 60)
+    parts.insert(0, uptime % 24)
+    uptime = int(uptime / 24)
+    parts.insert(0, uptime)
+
+    return " ".join([f"{x}{y}" for x,y in zip(parts, ['d', 'h', 'm'])])
+
+def meminfo_get_value(lines, name):
+    found = [line for line in lines.split('\n') if line.startswith(name)]
+    if len(found):
+        return int([e for e in found[0].split(' ') if e != ''][1])
+    return None
+
+def draw_text(draw, location, text, font, fill):
+    logging.debug(text)
+    draw.text(location, text, font=font, fill=fill)
+
+
+# -----------------------------------------------------------------------------
 # Pages
 # -----------------------------------------------------------------------------
 
-def intro(draw):
+def intro_page(draw):
+
     # Draw a white background
-    draw.rectangle((0, 0, oled.width - 1, oled.height - 1), outline=255, fill=255)
+    draw.rectangle((0, 0, WIDTH - 1, HEIGHT - 1), outline=255, fill=255)
 
     # Draw a smaller inner rectangle
     draw.rectangle(
-        (BORDER, BORDER, oled.width - BORDER - 1, oled.height - BORDER - 1),
+        (BORDER, BORDER, WIDTH - BORDER - 1, HEIGHT - BORDER - 1),
         outline=0,
         fill=0,
     )
@@ -43,28 +79,28 @@ def intro(draw):
     # Write title
     text = "RAKPiOS"
     font = ImageFont.truetype("DejaVuSans-Bold", 20)
-    (font_width, font_height) = font.getsize(text)
-    draw.text((oled.width // 2 - font_width // 2, oled.height // 2 - 20), text, font=font, fill=255)
+    (_, _, font_width, font_height) = font.getbbox(text)
+    draw_text(draw, (WIDTH // 2 - font_width // 2, HEIGHT // 2 - 20), text, font=font, fill=255)
 
     # Version
     p = subprocess.run('cat /etc/os-release | grep VERSION_ID | sed \'s/.*"rakpios-\(.*\)"/\\1/\'', shell=True,
                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     text = p.stdout.decode()
     font = ImageFont.truetype("DejaVuSans-Bold", 10)
-    (font_width, font_height) = font.getsize(text)
-    draw.text((oled.width // 2 - font_width // 2, oled.height // 2 + 5), text, font=font, fill=255)
+    (_, _, font_width, font_height) = font.getbbox(text)
+    draw_text(draw, (WIDTH // 2 - font_width // 2, HEIGHT // 2 + 5), text, font=font, fill=255)
 
     return True
 
-
-def network(draw):
+def network_page(draw):
+    
     # Create blank image for drawing
     font = ImageFont.load_default()
-    (font_width, font_height) = font.getsize("H")
+    (_, _, font_width, font_height) = font.getbbox("H")
     y = 0
 
-    draw.rectangle((0, 0, oled.width - 1, font_height - 1), outline=255, fill=255)
-    draw.text((0, y), "NETWORK", font=font, fill=0)
+    draw.rectangle((0, 0, WIDTH - 1, font_height - 1), outline=255, fill=255)
+    draw_text(draw, (0, y), "NETWORK", font=font, fill=0)
     y += font_height
 
     # Get IP
@@ -72,9 +108,10 @@ def network(draw):
     pattern = "^bond.*|^[ewr].*|^br.*|^lt.*|^umts.*|^lan.*"
 
     # Get bridge interfaces created by docker
-    p = subprocess.run('docker network ls -f driver=bridge --format "br-{{.ID}}"', shell=True, stdout=subprocess.PIPE,
-                       stderr=subprocess.PIPE)
-    br_docker_ifaces = p.stdout.decode()
+    br_docker_ifaces = []
+    client = docker.from_env()
+    for network in client.networks.list():
+        br_docker_ifaces.append("br-"+network.id[:12])
 
     for iface in ifaces:
         # Match only interface names starting with e (Ethernet), br (bridge), w (wireless), r (some Ralink drivers use>
@@ -85,119 +122,124 @@ def network(draw):
             if ipv4_addresses:
                 for address in ipv4_addresses:
                     addr = address['addr']
-                    draw.text((0, y), ("%s: %s" % (iface[:6], addr)), font=font, fill=255)
+                    draw_text(draw, (0, y), ("%s: %s" % (iface[:6], addr)), font=font, fill=255)
                     y += font_height
 
     return True
 
+def stats_page(draw):
 
-def stats(draw):
     # Create blank image for drawing
     font = ImageFont.load_default()
-    (font_width, font_height) = font.getsize("H")
+    (_, _, font_width, font_height) = font.getbbox("H")
     y = 0
 
-    draw.rectangle((0, 0, oled.width - 1, font_height - 1), outline=255, fill=255)
-    draw.text((0, y), "STATS", font=font, fill=0)
+    draw.rectangle((0, 0, WIDTH - 1, font_height - 1), outline=255, fill=255)
+    draw_text(draw, (0, y), "STATS", font=font, fill=0)
     y += font_height
 
     # Get cpu percent
-    cpu = psutil.cpu_percent(None)
-    draw.text((0, y), ("CPU: %.1f%%" % cpu), font=font, fill=255)
+    p = subprocess.run("grep 'cpu ' /proc/stat | awk '{usage=($2+$4)*100/($2+$4+$5)} END {print usage}'",
+                        shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    draw_text(draw, (0, y), ("CPU: %.1f%%" % float(p.stdout.decode())), font=font, fill=255)
     y += font_height
 
     # Get free memory percent
-    memory = 100 - psutil.virtual_memory().percent
-    draw.text((0, y), ("Free memory: %.1f%%" % memory), font=font, fill=255)
+    p = subprocess.run('cat /proc/meminfo', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    output = p.stdout.decode()
+    total = meminfo_get_value(output, "MemTotal")
+    available = meminfo_get_value(output, "MemAvailable")
+    draw_text(draw, (0, y), ("Free memory: %.1f%%" % (available * 100 / total)), font=font, fill=255)
     y += font_height
 
     # Get temperature
-    p = subprocess.run('vcgencmd measure_temp 2> /dev/null | sed \'s/temp=//\'', shell=True, stdout=subprocess.PIPE,
-                       stderr=subprocess.PIPE)
-    draw.text((0, y), ("Temperature: %s" % p.stdout.decode()), font=font, fill=255)
+    p = subprocess.run('cpu=$( cat /sys/class/thermal/thermal_zone0/temp ); echo "scale=2; $cpu/1000" | bc', 
+                        shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    draw_text(draw, (0, y), ("Temperature: %.1fC" % float(p.stdout.decode())), font=font, fill=255)
     y += font_height
 
     # Get uptime
-    p = subprocess.run('uptime -p | sed \'s/up //\' | sed \'s/ hours*/h/\' | sed \'s/ minutes*/m/\' | sed \'s/,//\'',
-                       shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    draw.text((0, y), ("Uptime: %s" % p.stdout.decode()), font=font, fill=255)
+    draw_text(draw, (0, y), ("Uptime: %s" % uptime()), font=font, fill=255)
     y += font_height
 
     return True
 
+def docker_page(draw):
+    
+    global page_docker
 
-def docker(draw):
     # Get the list of docker services
-    p = subprocess.run(
-        'docker ps -a --format \'{{.Names}}\t{{.Status}}\' | sort -r -k2 -k1 | awk \'{ print $1, $2 }\' | sed \'s/Exited/Down/\'',
-        shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    services = p.stdout.decode().split('\n')[:-1]
-    limit = len(services)
-    if limit > 5:
-        limit = 4
+    services = []
+    client = docker.from_env()
+    for container in client.containers.list():
+        if container.status == 'running':
+            services.append(container.name)
+    services.sort()
 
     # If no docker services do not display this page
-    if limit == 0:
+    if len(services) == 0:
         return False
+
+    # Paging
+    page_size = 4
+    last_page = int(len(services) / page_size)
+    if page_docker > last_page:
+        page_docker = 0
 
     # Create blank image for drawing
     font = ImageFont.load_default()
-    (font_width, font_height) = font.getsize("H")
+    (_, _, font_width, font_height) = font.getbbox("H")
     y = 0
 
     # Title
-    draw.rectangle((0, 0, oled.width - 1, font_height - 1), outline=255, fill=255)
-    draw.text((0, y), "DOCKER", font=font, fill=0)
+    draw.rectangle((0, 0, WIDTH - 1, font_height - 1), outline=255, fill=255)
+    draw_text(draw, (0, y), "DOCKER (%d)" % len(services), font=font, fill=0)
     y += font_height
 
     # Show services and status
-    for service in services[:limit]:
-        (name, status) = service.split(' ')
-        draw.text((0, y), name.lower().ljust(17)[:17] + status.upper().rjust(4), font=font, fill=255)
+    count = page_docker * page_size + 1
+    for name in services[page_docker * page_size:][:page_size]:
+        draw_text(draw, (0, y), f"[{count}] {name.lower().ljust(21)[:21]}", font=font, fill=255)
         y += font_height
-    if len(services) > limit:
-        draw.text((0, y), "... and %d more" % (len(services) - limit), font=font, fill=255)
-        y += font_height
+        count += 1
 
+    page_docker += 1
     return True
 
-
 def power_message(text1, text2):
-    # Clear display.
-    oled.fill(0)
-    oled.show()
+
     # Create blank image for drawing.
     # Make sure to create image with mode '1' for 1-bit color.
-    image = Image.new("1", (oled.width, oled.height))
+    image = Image.new("1", (WIDTH, HEIGHT))
     # Get drawing object to draw on image.
     draw = ImageDraw.Draw(image)
     # Draw a white background
-    draw.rectangle((0, 0, oled.width, oled.height), outline=255, fill=255)
+    draw.rectangle((0, 0, WIDTH, HEIGHT), outline=255, fill=255)
     # Draw a smaller inner rectangle
     draw.rectangle(
-        (MARGIN, MARGIN, oled.width - MARGIN - 1, oled.height - MARGIN - 1),
+        (MARGIN, MARGIN, WIDTH - MARGIN - 1, HEIGHT - MARGIN - 1),
         outline=0,
         fill=0, )
     # Load font.
     font = ImageFont.truetype("DejaVuSans-Bold", 12)
     # Draw Some Text
-    draw.text(
+    draw_text(draw, 
         (10, 15),
         text1,
         font=font,
         fill=255,
     )
-    draw.text(
-        (10, 15 + oled.height // 4),
+    draw_text(draw, 
+        (10, 15 + HEIGHT // 4),
         text2,
         font=font,
         fill=255,
     )
     # Display image
-    oled.image(image)
-    oled.show()
-    return True
+    device.clear()
+    device.display(image)
 
+    return True
 
 class Graceful_shutdown:
     """Catch signals to allow graceful shutdown."""
@@ -230,7 +272,7 @@ def system_shutdown():
     power_message("SYSTEM", "SHUTDOWN")
     time.sleep(5)
     # power off the OLED before the system shuts down
-    oled.poweroff()
+    device.hide()
 
 
 def power_supply_issues(channel):
@@ -248,7 +290,7 @@ def power_supply_issues(channel):
 
 def show_page(page):
     # Prepare canvas
-    image = Image.new("1", (oled.width, oled.height))
+    image = Image.new("1", (WIDTH, HEIGHT))
     draw = ImageDraw.Draw(image)
 
     response = False
@@ -264,11 +306,10 @@ def show_page(page):
             page = 1
 
     # Update screen
-    oled.fill(0)
+    device.clear()
     if ROTATE == 1:
         image = image.rotate(180, Image.NEAREST)
-    oled.image(image)
-    oled.show()
+    device.display(image)
 
     # Return pointer to next page
     return page
@@ -280,31 +321,29 @@ def show_page(page):
 
 class RepeatTimer(threading.Timer):
     page = 1
-
     def run(self):
         while not self.finished.wait(self.interval):
             self.page = self.function(self.page, *self.args, **self.kwargs)
 
+logging.basicConfig(format='[%(asctime)s] %(message)s', level=logging.INFO)
+logging.info(f"RAK7391 OLED info script")
 
 try:
-    i2c = board.I2C()
-    oled = adafruit_ssd1306.SSD1306_I2C(WIDTH, HEIGHT, i2c)
+    serial = i2c(port=1, address=0x3C)
+    device = ssd1306(serial, width=WIDTH, height=HEIGHT)
 except Exception:
     print("OLED screen not found")
     sys.exit()
 
-# oled.fill(0)
-# oled.show()
-
-pages = [intro, network, docker, stats]
+pages = [intro_page, network_page, docker_page, stats_page]
 show_page(0)
 timer = RepeatTimer(DELAY, show_page)
 timer.start()
-
 
 # Once detect GPIO 16 is falling, trigger the callback function
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(16, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.add_event_detect(16, GPIO.FALLING, callback=power_supply_issues)
+
 # signal handler for graceful shutdown
 signal_handler = Graceful_shutdown()

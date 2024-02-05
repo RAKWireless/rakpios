@@ -1,0 +1,15 @@
+pyserial
+smbus
+smbus2
+RPi.GPIO
+gpiod
+psutil
+iperf3
+LoRaRF 
+luma.core
+luma.oled
+adafruit-ads1x15
+adafruit-circuitpython-bme280
+adafruit-circuitpython-shtc3
+adafruit-extended-bus
+adafruit-circuitpython-atecc

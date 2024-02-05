@@ -65,8 +65,3 @@ rm -rf "${ROOTFS_DIR}/etc/update-motd.d/10-uname"
 
 # Set wwan0 to raw IP mode when using BG96
 cp files/wwan0.sh "${ROOTFS_DIR}/etc/NetworkManager/dispatcher.d/pre-up.d/"
-
-# Disable dhcpcd because NetworkManager already has a DHCP client
-on_chroot << EOF
-systemctl disable dhcpcd
-EOF

@@ -2,17 +2,6 @@
 
 on_chroot << EOF
 
-# Generic python modules
-pip3 install adafruit-blinka==7.1.1
-pip3 install adafruit-circuitpython-atecc==1.2.9
-pip3 install numpy==1.22.3
-
-# Dependecies for OLED script
-pip3 install adafruit-circuitpython-ssd1306==2.12.4
-pip3 install pillow==9.0.1
-pip3 install netifaces==0.11.0
-pip3 install psutil==5.9.0
-
 # Add FIRST_USER_NAME user to docker group
 adduser $FIRST_USER_NAME docker
 

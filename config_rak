@@ -1,6 +1,6 @@
 ARCH=arm64
 NAME="rakpios"
-VERSION=0.7.2
+VERSION=0.8.0
 
 TARGET_HOSTNAME="${NAME}"
 IMG_DATE=$( date +%Y%m%d )
@@ -15,4 +15,4 @@ STAGE_LIST="stage0 stage1 stage2 stage2-rak"
 PI_GEN_REPO=https://github.com/RAKWireless/rakpios
 KERNEL_BUILD=0
 KERNEL_CACHED=1
-KERNEL_TAG=rpi-5.15.y
+KERNEL_TAG=rpi-6.1.y

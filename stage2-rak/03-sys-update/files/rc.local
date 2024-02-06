@@ -11,21 +11,13 @@
 #
 # By default this script does nothing.
 
-# Print the IP address
-_IP=$(hostname -I) || true
-if [ "$_IP" ]; then
-  printf "My IP address is %s\n" "$_IP"
-fi
-
-# Check for RAKUID
-if grep -Fq "RAKUID=" /etc/environment; then
-    true
-else
-    echo "RAKUID=$(get_RAKUID 2>&1)" >> /etc/environment
+# Cache RAKUID
+if [ -z "$RAKUID" ]; then
+    echo "RAKUID=$( rakuid )" >> /etc/environment
 fi
 
 # Display basic info on oled screen
-/bin/oled &
+/usr/bin/oled &
 
 exit 0
 

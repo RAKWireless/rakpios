@@ -1,8 +1,5 @@
 #!/usr/bin/bash
-if [[ ! -z "$RAKUID" ]]; 
-then
-    echo $RAKUID
-else
-    echo "error, RAKUID is not set"
+if [[ -z "$RAKUID" ]]; then
+    RAKUID=$( atecc -b 1 -c 'serial' )
 fi
-
+echo $RAKUID

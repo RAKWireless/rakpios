@@ -4,7 +4,6 @@ After=multi-user.target
 
 [Service]
 Type=simple
-#ExecStart=/etc/init.d/create-ap
 ExecStart=/usr/local/bin/create-ap
 
 [Install]

@@ -56,7 +56,7 @@ def meminfo_get_value(lines, name):
     return None
 
 def draw_text(draw, location, text, font, fill):
-    logging.debug(text)
+    logging.debug(f"DISPLAY: {text}")
     draw.text(location, text, font=font, fill=fill)
 
 
@@ -85,7 +85,7 @@ def intro_page(draw):
     # Version
     p = subprocess.run('cat /etc/os-release | grep VERSION_ID | sed \'s/.*"rakpios-\(.*\)"/\\1/\'', shell=True,
                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    text = p.stdout.decode()
+    text = p.stdout.decode().strip()
     font = ImageFont.truetype("DejaVuSans-Bold", 10)
     (_, _, font_width, font_height) = font.getbbox(text)
     draw_text(draw, (WIDTH // 2 - font_width // 2, HEIGHT // 2 + 5), text, font=font, fill=255)

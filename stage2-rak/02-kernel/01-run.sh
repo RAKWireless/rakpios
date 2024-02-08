@@ -1,10 +1,8 @@
 #!/bin/bash -e
 
-ARCH=${ARCH:-"arm64"}
-export ARCH
-
-KERNEL_TAG=${KERNEL_TAG:-"rpi-5.15.y"}
-export KERNEL_TAG
+export ARCH=${ARCH:-"arm64"}
+export KERNEL_TAG=${KERNEL_TAG:-"rpi-6.1.y"}
+export MACHINE=${MACHINE:-"cm4"}
 
 pushd files >> /dev/null
 
@@ -26,13 +24,32 @@ if [[ ${KERNEL_BUILD:-0} -eq 1 ]]; then
 
     # Apply configuration
     ./make default
-    ./make set CONFIG_R8169 y
-    ./make set CONFIG_REALTEK_PHY y
+    ./make set CONFIG_LOCALVERSION "v8-rak"
     ./make set CONFIG_IWLWIFI m
     ./make set CONFIG_IWLWIFI_LEDS y
     ./make set CONFIG_IWLMVM m 
     ./make set CONFIG_IWLWIFI_OPMODE_MODULAR y
     ./make set CONFIG_IWLWIFI_DEVICE_TRACING y
+
+    # Raspberry Pi 5
+    if [[ "$MACHINE" == "rpi5" ]]; then
+        ./make set CONFIG_LOCALVERSION "-v8-16k-rak"
+        ./make set CONFIG_ARM64_PAGE_SHIFT 14
+        ./make set CONFIG_ARM64_CONT_PTE_SHIFT 7
+        ./make set CONFIG_ARM64_CONT_PMD_SHIFT 5
+        ./make set CONFIG_ARCH_MMAP_RND_BITS_MIN 16
+        ./make set CONFIG_ARCH_MMAP_RND_BITS_MAX 30
+        ./make set CONFIG_ARCH_MMAP_RND_COMPAT_BITS_MIN 9
+        ./make unset CONFIG_ARM64_4K_PAGES
+        ./make set CONFIG_ARM64_16K_PAGES y
+        ./make unset CONFIG_ARM64_VA_BITS_39
+        ./make unset CONFIG_ARM64_VA_BITS_36
+        ./make set CONFIG_ARM64_VA_BITS_47 y
+        ./make set CONFIG_ARM64_VA_BITS 47
+        ./make set CONFIG_ARCH_FORCE_MAX_ORDER 12
+        ./make unset CONFIG_ARCH_WANTS_THP_SWAP
+    fi
+
 
     # Build
     ./make build

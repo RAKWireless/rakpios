@@ -2,6 +2,7 @@ apt-transport-https
 ca-certificates
 lsb-release
 python3-pip
+python3-virtualenv
 rng-tools
 curl
 gnupg
@@ -10,6 +11,5 @@ git
 figlet
 i2c-tools
 jq
-gpiod
 systemd-timesyncd
 tmux

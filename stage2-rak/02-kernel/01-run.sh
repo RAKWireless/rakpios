@@ -50,7 +50,7 @@ if [[ ${KERNEL_BUILD:-0} -eq 1 ]]; then
 elif [[ ${KERNEL_CACHED:-1} -eq 1 ]]; then
 
     echo "Using cached kernel"
-    unzip -oq ${ARCH}.kernel.zip -d ${ROOTFS_DIR}
+    unzip -oq ${MACHINE}.${ARCH}.kernel.zip -d ${ROOTFS_DIR}
 
 else
 

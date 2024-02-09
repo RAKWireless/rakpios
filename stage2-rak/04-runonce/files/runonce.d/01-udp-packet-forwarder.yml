@@ -3,7 +3,7 @@ version: '2.0'
 services:
 
   udp-packet-forwarder:
-    image: rakwireless/udp-packet-forwarder:latest
+    image: rakwireless/udp-packet-forwarder:aarch64-latest
     container_name: udp-packet-forwarder
     restart: unless-stopped
     privileged: true

@@ -26,7 +26,7 @@ cp files/runonce.d/* "${ROOTFS_DIR}/etc/local/runonce.d/"
 
 # Update rc.local script to run runonce
 on_chroot << EOF
-sed 's/^exit/# Run once after reboot\n\/usr\/local\/bin\/runonce\n\nexit/' -i /etc/rc.local 
+sed 's|^exit|# Run after reboot\n/usr/local/bin/runonce\n\nexit|' -i /etc/rc.local 
 EOF
 
 # Configure the premissions for the main script and the service scripts

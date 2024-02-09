@@ -7,5 +7,5 @@
 #fi
 
 # Bring up service
-docker compose -f /etc/local/runonce.d/udp-packet-forwarder.yml up -d
+docker compose -f /etc/local/runonce.d/01-udp-packet-forwarder.yml up -d
 

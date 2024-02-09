@@ -1,0 +1,349 @@
+#!/usr/bin/env python3
+
+import signal
+import time
+import sys
+import threading
+import netifaces
+import re
+import subprocess
+import logging
+import docker
+
+import RPi.GPIO as GPIO
+from PIL import Image, ImageDraw, ImageFont
+
+from luma.core.interface.serial import i2c
+from luma.core.render import canvas
+from luma.oled.device import ssd1306
+
+# -----------------------------------------------------------------------------
+# Configuration
+# -----------------------------------------------------------------------------
+
+WIDTH = 128
+HEIGHT = 64
+BORDER = 5
+DELAY = 5
+MARGIN = 2
+ROTATE = 0
+
+# -----------------------------------------------------------------------------
+# Utils
+# -----------------------------------------------------------------------------
+
+page_docker = 0
+
+def uptime():
+    
+    p = subprocess.run('cat /proc/uptime | cut -f1 -d" "', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    uptime = float(p.stdout.decode())
+
+    parts = []
+    uptime = int(uptime / 60)
+    parts.insert(0, uptime % 60)
+    uptime = int(uptime / 60)
+    parts.insert(0, uptime % 24)
+    uptime = int(uptime / 24)
+    parts.insert(0, uptime)
+
+    return " ".join([f"{x}{y}" for x,y in zip(parts, ['d', 'h', 'm'])])
+
+def meminfo_get_value(lines, name):
+    found = [line for line in lines.split('\n') if line.startswith(name)]
+    if len(found):
+        return int([e for e in found[0].split(' ') if e != ''][1])
+    return None
+
+def draw_text(draw, location, text, font, fill):
+    logging.debug(f"DISPLAY: {text}")
+    draw.text(location, text, font=font, fill=fill)
+
+
+# -----------------------------------------------------------------------------
+# Pages
+# -----------------------------------------------------------------------------
+
+def intro_page(draw):
+
+    # Draw a white background
+    draw.rectangle((0, 0, WIDTH - 1, HEIGHT - 1), outline=255, fill=255)
+
+    # Draw a smaller inner rectangle
+    draw.rectangle(
+        (BORDER, BORDER, WIDTH - BORDER - 1, HEIGHT - BORDER - 1),
+        outline=0,
+        fill=0,
+    )
+
+    # Write title
+    text = "RAKPiOS"
+    font = ImageFont.truetype("DejaVuSans-Bold", 20)
+    (_, _, font_width, font_height) = font.getbbox(text)
+    draw_text(draw, (WIDTH // 2 - font_width // 2, HEIGHT // 2 - 20), text, font=font, fill=255)
+
+    # Version
+    p = subprocess.run('cat /etc/os-release | grep VERSION_ID | sed \'s/.*"rakpios-\(.*\)"/\\1/\'', shell=True,
+                       stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    text = p.stdout.decode().strip()
+    font = ImageFont.truetype("DejaVuSans-Bold", 10)
+    (_, _, font_width, font_height) = font.getbbox(text)
+    draw_text(draw, (WIDTH // 2 - font_width // 2, HEIGHT // 2 + 5), text, font=font, fill=255)
+
+    return True
+
+def network_page(draw):
+    
+    # Create blank image for drawing
+    font = ImageFont.load_default()
+    (_, _, font_width, font_height) = font.getbbox("H")
+    y = 0
+
+    draw.rectangle((0, 0, WIDTH - 1, font_height - 1), outline=255, fill=255)
+    draw_text(draw, (0, y), "NETWORK", font=font, fill=0)
+    y += font_height
+
+    # Get IP
+    ifaces = netifaces.interfaces()
+    pattern = "^bond.*|^[ewr].*|^br.*|^lt.*|^umts.*|^lan.*"
+
+    # Get bridge interfaces created by docker
+    br_docker_ifaces = []
+    client = docker.from_env()
+    for network in client.networks.list():
+        br_docker_ifaces.append("br-"+network.id[:12])
+
+    for iface in ifaces:
+        # Match only interface names starting with e (Ethernet), br (bridge), w (wireless), r (some Ralink drivers use>
+        # Get rid off of the br interface created by docker
+        if re.match(pattern, iface) and iface not in br_docker_ifaces:
+            ifaddresses = netifaces.ifaddresses(iface)
+            ipv4_addresses = ifaddresses.get(netifaces.AF_INET)
+            if ipv4_addresses:
+                for address in ipv4_addresses:
+                    addr = address['addr']
+                    draw_text(draw, (0, y), ("%s: %s" % (iface[:6], addr)), font=font, fill=255)
+                    y += font_height
+
+    return True
+
+def stats_page(draw):
+
+    # Create blank image for drawing
+    font = ImageFont.load_default()
+    (_, _, font_width, font_height) = font.getbbox("H")
+    y = 0
+
+    draw.rectangle((0, 0, WIDTH - 1, font_height - 1), outline=255, fill=255)
+    draw_text(draw, (0, y), "STATS", font=font, fill=0)
+    y += font_height
+
+    # Get cpu percent
+    p = subprocess.run("grep 'cpu ' /proc/stat | awk '{usage=($2+$4)*100/($2+$4+$5)} END {print usage}'",
+                        shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    draw_text(draw, (0, y), ("CPU: %.1f%%" % float(p.stdout.decode())), font=font, fill=255)
+    y += font_height
+
+    # Get free memory percent
+    p = subprocess.run('cat /proc/meminfo', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    output = p.stdout.decode()
+    total = meminfo_get_value(output, "MemTotal")
+    available = meminfo_get_value(output, "MemAvailable")
+    draw_text(draw, (0, y), ("Free memory: %.1f%%" % (available * 100 / total)), font=font, fill=255)
+    y += font_height
+
+    # Get temperature
+    p = subprocess.run('cpu=$( cat /sys/class/thermal/thermal_zone0/temp ); echo "scale=2; $cpu/1000" | bc', 
+                        shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    draw_text(draw, (0, y), ("Temperature: %.1fC" % float(p.stdout.decode())), font=font, fill=255)
+    y += font_height
+
+    # Get uptime
+    draw_text(draw, (0, y), ("Uptime: %s" % uptime()), font=font, fill=255)
+    y += font_height
+
+    return True
+
+def docker_page(draw):
+    
+    global page_docker
+
+    # Get the list of docker services
+    services = []
+    client = docker.from_env()
+    for container in client.containers.list():
+        if container.status == 'running':
+            services.append(container.name)
+    services.sort()
+
+    # If no docker services do not display this page
+    if len(services) == 0:
+        return False
+
+    # Paging
+    page_size = 4
+    last_page = int(len(services) / page_size)
+    if page_docker > last_page:
+        page_docker = 0
+
+    # Create blank image for drawing
+    font = ImageFont.load_default()
+    (_, _, font_width, font_height) = font.getbbox("H")
+    y = 0
+
+    # Title
+    draw.rectangle((0, 0, WIDTH - 1, font_height - 1), outline=255, fill=255)
+    draw_text(draw, (0, y), "DOCKER (%d)" % len(services), font=font, fill=0)
+    y += font_height
+
+    # Show services and status
+    count = page_docker * page_size + 1
+    for name in services[page_docker * page_size:][:page_size]:
+        draw_text(draw, (0, y), f"[{count}] {name.lower().ljust(21)[:21]}", font=font, fill=255)
+        y += font_height
+        count += 1
+
+    page_docker += 1
+    return True
+
+def power_message(text1, text2):
+
+    # Create blank image for drawing.
+    # Make sure to create image with mode '1' for 1-bit color.
+    image = Image.new("1", (WIDTH, HEIGHT))
+    # Get drawing object to draw on image.
+    draw = ImageDraw.Draw(image)
+    # Draw a white background
+    draw.rectangle((0, 0, WIDTH, HEIGHT), outline=255, fill=255)
+    # Draw a smaller inner rectangle
+    draw.rectangle(
+        (MARGIN, MARGIN, WIDTH - MARGIN - 1, HEIGHT - MARGIN - 1),
+        outline=0,
+        fill=0, )
+    # Load font.
+    font = ImageFont.truetype("DejaVuSans-Bold", 12)
+    # Draw Some Text
+    draw_text(draw, 
+        (10, 15),
+        text1,
+        font=font,
+        fill=255,
+    )
+    draw_text(draw, 
+        (10, 15 + HEIGHT // 4),
+        text2,
+        font=font,
+        fill=255,
+    )
+    # Display image
+    device.clear()
+    device.display(image)
+
+    return True
+
+class Graceful_shutdown:
+    """Catch signals to allow graceful shutdown."""
+
+    def __init__(self):
+        self.receivedSignal = self.receivedTermSignal = False
+        # 1 : SIGHUP 2: SIGINT 3: SIGQUIT 10: SIGUSR1 12:SIGUSR2 15: SIGTERM
+        catchSignals = [
+            1,
+            2,
+            3,
+            10,
+            12,
+            15,
+        ]
+        for signum in catchSignals:
+            signal.signal(signum, self.handler)
+        signal.pause()
+
+    def handler(self, signum, frame):
+        self.lastSignal = signum
+        self.receivedSignal = True
+        if signum in [2, 3, 15]:
+            self.receivedTermSignal = True
+            system_shutdown()
+            sys.exit()
+
+def system_shutdown():
+    timer.cancel()
+    power_message("SYSTEM", "SHUTDOWN")
+    time.sleep(5)
+    # power off the OLED before the system shuts down
+    device.hide()
+
+
+def power_supply_issues(channel):
+    global timer    
+    timer.cancel()
+    power_message("POWER SUPPLY", "ISSUES !")
+    time.sleep(60)
+    timer = RepeatTimer(DELAY, show_page)
+    timer.start()
+
+
+# -----------------------------------------------------------------------------
+# State machine
+# -----------------------------------------------------------------------------
+
+def show_page(page):
+    # Prepare canvas
+    image = Image.new("1", (WIDTH, HEIGHT))
+    draw = ImageDraw.Draw(image)
+
+    response = False
+    while not response:
+
+        # Show page (returns false if the page should not be displayed)
+        response = pages[page](draw)
+
+        # Update next page
+        # We are not showing page 0 (intro) again
+        page = page + 1
+        if page >= len(pages):
+            page = 1
+
+    # Update screen
+    device.clear()
+    if ROTATE == 1:
+        image = image.rotate(180, Image.NEAREST)
+    device.display(image)
+
+    # Return pointer to next page
+    return page
+
+
+# -----------------------------------------------------------------------------
+# Main loop
+# -----------------------------------------------------------------------------
+
+class RepeatTimer(threading.Timer):
+    page = 1
+    def run(self):
+        while not self.finished.wait(self.interval):
+            self.page = self.function(self.page, *self.args, **self.kwargs)
+
+logging.basicConfig(format='[%(asctime)s] %(message)s', level=logging.INFO)
+logging.info(f"RAK7391 OLED info script")
+
+try:
+    serial = i2c(port=1, address=0x3C)
+    device = ssd1306(serial, width=WIDTH, height=HEIGHT)
+except Exception:
+    print("OLED screen not found")
+    sys.exit()
+
+pages = [intro_page, network_page, docker_page, stats_page]
+show_page(0)
+timer = RepeatTimer(DELAY, show_page)
+timer.start()
+
+# Once detect GPIO 16 is falling, trigger the callback function
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(16, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.add_event_detect(16, GPIO.FALLING, callback=power_supply_issues)
+
+# signal handler for graceful shutdown
+signal_handler = Graceful_shutdown()

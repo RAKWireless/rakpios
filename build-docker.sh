@@ -160,7 +160,8 @@ echo "copying log from container ${CONTAINER_NAME} to deploy/"
 ${DOCKER} logs --timestamps "${CONTAINER_NAME}" &>deploy/build-docker.log
 
 echo "copying kernel from container ${CONTAINER_NAME} to depoy/"
-${DOCKER} cp -q ${CONTAINER_NAME}:/pi-gen/stage2-rak/02-kernel/files/${ARCH}.kernel.zip deploy/${ARCH}.kernel.zip
+${DOCKER} cp -q ${CONTAINER_NAME}:/pi-gen/stage2-rak/02-kernel/files/cm4.arm64.kernel.zip deploy/
+${DOCKER} cp -q ${CONTAINER_NAME}:/pi-gen/stage2-rak/02-kernel/files/rpi5.arm64.kernel.zip deploy/
 
 ls -lah deploy
 

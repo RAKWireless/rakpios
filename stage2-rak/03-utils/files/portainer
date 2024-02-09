@@ -1,0 +1,149 @@
+#!/bin/bash
+
+# Set variables
+portainer_version=2.19.1
+portainer_template_url=https://raw.githubusercontent.com/RAKWireless/portainer-templates/master/portainer_app_template.json
+# Bcrypt-encrypted password, plain text is "changeme"
+portainer_password=\$2y\$05\$CamDlWaqdhRQvy1AuOZlY.4QYi/GptU6lDruXD0YiYiwQljGJmamC
+portainer_name=portainer
+portainer_ip=$SSH_CONNECTION | awk '{print $3}'
+Y="\033[1;33m"
+W="\e[0;39m"
+
+Help()
+{
+   # Display Help
+   echo ""
+   echo "Usage: portainer [OPTION] COMMAND"
+   echo "" 
+   echo "Options:"
+   echo "  -h,--help  Print this Help"
+   echo "  -v <portainer image version> define a specific version of portainer you want to deploy" 
+   echo "  -t <portainer app template url>  define a specific portainer app template to start with"
+   echo ""
+   echo "Commands:"
+   echo "  up    Start portainer service"
+   echo "  down  Stop portainer service"
+   echo ""	
+}
+
+Get_IP()
+{
+   if [[ ! -z "${SSH_CONNECTION}" ]]; then
+      portainer_ip=`echo $SSH_CONNECTION | awk '{print $3}'`
+      portainer_url=`echo "https://"$portainer_ip":9443"`
+      echo -e $W"Portainer server address is "$Y$portainer_url;
+   else
+      # Get IP addresses
+      SHOW_IP_PATTERN="^bond.*|^[ewr].*|^br.*|^lt.*|^umts.*|^lan.*"
+      ips=()
+      docker_br_intf=`docker network ls -f driver=bridge --format "br-{{.ID}}"`  #docker bridge network interface
+      for f in /sys/class/net/*; do
+         intf=$(basename $f)
+         # match only interface names starting with e (Ethernet), br (bridge), w (wireless), r (some Ralink drivers use>
+         # and get rid of bridge interface created by docker
+         if ([[ $intf =~ $SHOW_IP_PATTERN ]] && !([[ $docker_br_intf =~ $intf ]])) then
+            tmp=$(ip -4 addr show dev $intf | awk '/inet/ {print $2}' | cut -d'/' -f1)
+            # add both name and IP - can be informative but becomes ugly with long persistent/predictable device names
+            #[[ -n $tmp ]] && ips+=("$intf: $tmp")
+            # add IP only
+            [[ -n $tmp ]] && ips+=("$tmp")
+         fi 
+      done
+      IP=${ips[@]}
+      echo "Browse to the following URL(s) to access your Portainer Server"
+      for ((i=1; i<=`wc -w <<< "$IP"`;i++));
+      do
+         portainer_ip=`echo $IP | awk -v i="$i" '{print $i}'`
+         portainer_url=`echo "https://"$portainer_ip":9443"`
+         echo -e $W"Portainer server address: "$Y$portainer_url;
+      done 
+   fi
+}
+
+Up()
+{
+   if [[ $(docker container ls -af name=$portainer_name --format true) ]]; then
+      docker start $portainer_name
+      portainer_docker_id=`docker ps -aqf "name=/$portainer_name"`
+      echo "Start the portainer container $portainer_docker_id"
+      Get_IP
+   else
+      docker run -d -p 8000:8000 -p 9443:9443 --name=$portainer_name --restart=unless-stopped -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer-ce:$portainer_version --admin-password=$portainer_password --templates $portainer_template_url
+      if [ $? -ne 0 ]; then
+         echo "Portainer deployed failed, please double check the virables and error logs"
+      else
+         portainer_docker_id=`docker ps -aqf "name=/$portainer_name"`
+         echo "Portainer deployed, portainer image version: portainer-ce:$portainer_version"
+         echo "container id: $portainer_docker_id"
+         echo "app template url: $portainer_template_url"
+         Get_IP
+         echo -e $W"Default username: "$Y"admin"
+         echo -e $W"Default password: "$Y"changeme"
+      fi
+   fi   
+}
+
+Down()
+{
+   docker stop $portainer_name
+   if [ $? -ne 0 ]; then
+      echo "Failed to stop portainer"
+   else
+      echo "$portainer_name is stopped."
+      echo "Run portainer up again to start the service."
+   fi
+}
+
+SHORT=v:t:h
+LONG=help
+OPTS=$(getopt --options $SHORT --longoptions $LONG -- "$@")
+
+if [ $? -ne 0 ]; then
+	Help
+    exit
+fi
+ 
+eval set -- "$OPTS"
+
+while :
+do
+   case $1 in
+      -h | --help) # display Help
+         Help
+         exit
+         ;;
+      -v) # Enter the version of portainer image
+         portainer_version=$2
+         shift 2
+         ;;
+      -t) # Enter the url of portainer app template
+         portainer_template_url=$2
+         shift 2
+         ;;
+      --)
+         shift;
+         break
+         ;;
+   esac
+done
+
+if [ $# != 1 ]
+then
+    echo "one command 'up' or 'down' is required"
+    Help
+    exit
+fi
+
+if [ "$1" == "up" ];
+then 
+    Up
+    exit
+elif [ "$1" == "down" ];
+then
+    Down
+    exit
+else
+    echo "invalid command: $1"
+    Help
+fi

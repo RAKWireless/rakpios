@@ -30,7 +30,10 @@ CORES=${CORES:=$(grep "^processor" /proc/cpuinfo | sort -u | wc -l)}
 CORES=${CORES:=1}
 
 # Commit to build
-KERNEL_TAG=${KERNEL_TAG:-"rpi-5.15.y"}
+KERNEL_TAG=${KERNEL_TAG:-"rpi-6.1.y"}
+
+# Machine to build for
+MACHINE=${MACHINE:-"cm4"}
 
 # Get architecture
 ARCH=${ARCH:-"arm64"}
@@ -39,13 +42,17 @@ case ${ARCH} in
     "arm")
         export COMPILER=arm-linux-gnueabihf-
         export IMAGE=zImage
-        export KERNEL=kernel7l.img
+        export KERNEL=${KERNEL:-"kernel7l"}
         ;;
 
     "arm64")
         export COMPILER=aarch64-linux-gnu-
-        export IMAGE=Image
-        export KERNEL=kernel8.img
+        export IMAGE=Image.gz
+        if [[ "$MACHINE" == "rpi5" ]]; then
+            export KERNEL=${KERNEL:-"kernel_2712"}
+        else
+            export KERNEL=${KERNEL:-"kernel8"}
+        fi
         ;;
 
     *)
@@ -90,6 +97,9 @@ case ${OPTION} in
             popd >> /dev/null
         fi
         rm -rf modules
+        
+        # Show version
+        cat linux/Makefile | head -n 4 | tail -n +2 
 
         ;;
 
@@ -131,7 +141,11 @@ case ${OPTION} in
 
     "default" )
         pushd linux >> /dev/null
-        ${MAKE} bcm2711_defconfig
+        if [[ "$MACHINE" == "rpi5" ]]; then
+            ${MAKE} bcm2712_defconfig
+        else
+            ${MAKE} bcm2711_defconfig
+        fi
         popd >> /dev/null
 
         ;;
@@ -187,18 +201,18 @@ case ${OPTION} in
         RELEASE=$(cat linux/include/config/kernel.release)
 
         rm -rf rootfs $FILE
-        mkdir -p rootfs/boot/overlays
+        mkdir -p rootfs/boot/firmware/overlays
         cp -r modules/lib rootfs/
         rm -rf rootfs/lib/modules/*/source
         rm -rf rootfs/lib/modules/*/build
-        cp -r linux/arch/${ARCH}/boot/${IMAGE} rootfs/boot/${KERNEL}
-        cp -r linux/arch/${ARCH}/boot/dts/broadcom/*.dtb rootfs/boot/
-        cp -r linux/arch/${ARCH}/boot/dts/overlays/*.dtb* rootfs/boot/overlays/
-        cp -r linux/arch/${ARCH}/boot/dts/overlays/README rootfs/boot/overlays/
+        cp -r linux/arch/${ARCH}/boot/dts/broadcom/*.dtb rootfs/boot/firmware/
+        cp -r linux/arch/${ARCH}/boot/dts/overlays/*.dtb* rootfs/boot/firmware/overlays/
+        cp -r linux/arch/${ARCH}/boot/dts/overlays/README rootfs/boot/firmware/overlays/
+        cp -r linux/arch/${ARCH}/boot/${IMAGE} rootfs/boot/firmware/${KERNEL}.img
         cp -r linux/.config rootfs/boot/config-${RELEASE}
         pushd rootfs >> /dev/null
-        rm ../${ARCH}.kernel.zip
-        zip -yrq ../${ARCH}.kernel.zip *
+        rm ../${MACHINE}.${ARCH}.kernel.zip
+        zip -yrq ../${MACHINE}.${ARCH}.kernel.zip *
         popd >> /dev/null
         rm -rf rootfs
 
@@ -215,10 +229,10 @@ case ${OPTION} in
         RELEASE=$(cat linux/include/config/kernel.release)
 
         rsync -rtulv --exclude={'source','build'} modules/lib/modules/* ${DESTINATION}/lib/modules/
-        rsync -rtulv linux/arch/${ARCH}/boot/${IMAGE} ${DESTINATION}/boot/${KERNEL}
-        rsync -rtulv linux/arch/${ARCH}/boot/dts/broadcom/*.dtb ${DESTINATION}/boot/
-        rsync -rtulv linux/arch/${ARCH}/boot/dts/overlays/*.dtb* ${DESTINATION}/boot/overlays/
-        rsync -rtulv linux/arch/${ARCH}/boot/dts/overlays/README ${DESTINATION}/boot/overlays/
+        rsync -rtulv linux/arch/${ARCH}/boot/dts/broadcom/*.dtb ${DESTINATION}/boot/firmware/
+        rsync -rtulv linux/arch/${ARCH}/boot/dts/overlays/*.dtb* ${DESTINATION}/boot/firmware/overlays/
+        rsync -rtulv linux/arch/${ARCH}/boot/dts/overlays/README ${DESTINATION}/boot/firmware/overlays/
+        rsync -rtulv linux/arch/${ARCH}/boot/${IMAGE} ${DESTINATION}/boot/firmware/${KERNEL}.img
         rsync -rtulv linux/.config ${DESTINATION}/boot/config-${RELEASE}
 
         ;;

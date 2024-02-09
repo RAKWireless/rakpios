@@ -1,0 +1,10 @@
+[Unit]
+Description=OLED Info panel
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/oled
+
+[Install]
+WantedBy=multi-user.target

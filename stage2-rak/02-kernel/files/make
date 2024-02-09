@@ -201,7 +201,7 @@ case ${OPTION} in
         RELEASE=$(cat linux/include/config/kernel.release)
 
         rm -rf rootfs $FILE
-        mkdir -p rootfs/boot/overlays
+        mkdir -p rootfs/boot/firmware/overlays
         cp -r modules/lib rootfs/
         rm -rf rootfs/lib/modules/*/source
         rm -rf rootfs/lib/modules/*/build

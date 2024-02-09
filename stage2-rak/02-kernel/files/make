@@ -97,6 +97,9 @@ case ${OPTION} in
             popd >> /dev/null
         fi
         rm -rf modules
+        
+        # Show version
+        cat linux/Makefile | head -n 4 | tail -n +2 
 
         ;;
 
@@ -180,7 +183,7 @@ case ${OPTION} in
         rm -rf modules
         mkdir modules
         pushd linux >> /dev/null
-        ${MAKE} -j4 ${IMAGE} modules dtbs
+        ${MAKE} ${IMAGE} modules dtbs
         env PATH=$PATH ${MAKE} INSTALL_MOD_PATH=../modules modules_install
         popd >> /dev/null
 
@@ -208,8 +211,8 @@ case ${OPTION} in
         cp -r linux/arch/${ARCH}/boot/${IMAGE} rootfs/boot/firmware/${KERNEL}.img
         cp -r linux/.config rootfs/boot/config-${RELEASE}
         pushd rootfs >> /dev/null
-        rm ../${ARCH}.kernel.zip
-        zip -yrq ../${ARCH}.kernel.zip *
+        rm ../${MACHINE}.${ARCH}.kernel.zip
+        zip -yrq ../${MACHINE}.${ARCH}.kernel.zip *
         popd >> /dev/null
         rm -rf rootfs
 

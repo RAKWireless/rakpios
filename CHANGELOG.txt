@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.8.0] - Unreleased
+## [0.8.0] - 2023-02-09
 
 ### Changed
 - Based on upstream 2023-12-11-raspios-bookworm with kernel 6.1
@@ -12,7 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refactor stage2-rak folders
 
 ### Added
-- Added firstboot.d folder with scripts to execute ono first boot
+- Added firstboot.d folder with scripts to execute on first boot
+- Support for Raspberry Pi 5
 
 ### Fixed
 - Remove loopback interface when checking for connected networks in create-ap

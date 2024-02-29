@@ -1,10 +1,7 @@
 #!/bin/bash -e
 
-ARCH=${ARCH:-"arm64"}
-export ARCH
-
-KERNEL_TAG=${KERNEL_TAG:-"rpi-5.15.y"}
-export KERNEL_TAG
+export ARCH=${ARCH:-"arm64"}
+export KERNEL_TAG=${KERNEL_TAG:-"rpi-6.1.y"}
 
 pushd files >> /dev/null
 
@@ -24,24 +21,35 @@ if [[ ${KERNEL_BUILD:-0} -eq 1 ]]; then
         done
     fi
 
-    # Apply configuration
-    ./make default
-    ./make set CONFIG_R8169 y
-    ./make set CONFIG_REALTEK_PHY y
-    ./make set CONFIG_IWLWIFI m
-    ./make set CONFIG_IWLWIFI_LEDS y
-    ./make set CONFIG_IWLMVM m 
-    ./make set CONFIG_IWLWIFI_OPMODE_MODULAR y
-    ./make set CONFIG_IWLWIFI_DEVICE_TRACING y
+    # Build images for CM4 and RPi5
+    for MACHINE in cm4 rpi5; do 
+    
+        export MACHINE
+        echo "Building kernel for ${MACHINE^^}"
 
-    # Build
-    ./make build
-    
-    # Copy kernel and modules to image
-    ./make copy ${ROOTFS_DIR}
-    
-    # Create zipped version we can use as cache
-    ./make zip
+        # Apply configuration
+        ./make default
+        if [[ "$MACHINE" == "rpi5" ]]; then
+            ./make set CONFIG_LOCALVERSION \"-v8-16k-rak\"
+        else
+            ./make set CONFIG_LOCALVERSION \"-v8-rak\"
+        fi
+        ./make set CONFIG_IWLWIFI m
+        ./make set CONFIG_IWLWIFI_LEDS y
+        ./make set CONFIG_IWLMVM m 
+        ./make set CONFIG_IWLWIFI_OPMODE_MODULAR y
+        ./make set CONFIG_IWLWIFI_DEVICE_TRACING y
+
+        # Build
+        ./make build
+        
+        # Copy kernel and modules to image
+        ./make copy ${ROOTFS_DIR}
+        
+        # Create zipped version we can use as cache
+        ./make zip
+
+    done
 
     # Clean up
     rm -rf linux modules
@@ -49,7 +57,9 @@ if [[ ${KERNEL_BUILD:-0} -eq 1 ]]; then
 elif [[ ${KERNEL_CACHED:-1} -eq 1 ]]; then
 
     echo "Using cached kernel"
-    unzip -oq ${ARCH}.kernel.zip -d ${ROOTFS_DIR}
+    for file in `ls *.kernel.zip`; do
+        unzip -oq $file -d ${ROOTFS_DIR}
+    done
 
 else
 

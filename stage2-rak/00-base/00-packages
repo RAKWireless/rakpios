@@ -1,0 +1,15 @@
+apt-transport-https
+ca-certificates
+lsb-release
+python3-pip
+python3-virtualenv
+rng-tools
+curl
+gnupg
+vim
+git
+figlet
+i2c-tools
+jq
+systemd-timesyncd
+tmux

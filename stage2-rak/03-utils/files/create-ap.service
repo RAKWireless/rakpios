@@ -1,0 +1,10 @@
+[Unit]
+Description=Enable an automatic AP
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/create-ap
+
+[Install]
+WantedBy=multi-user.target

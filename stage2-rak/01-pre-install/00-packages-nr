@@ -1,4 +1,0 @@
-docker-ce=5:20.10.17~3-0~debian-bullseye
-docker-ce-cli=5:20.10.17~3-0~debian-bullseye
-docker-compose-plugin=2.6.0~debian-bullseye
-containerd.io=1.6.6-1

@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Run firstboot scripts
+for file in /usr/share/firstboot.d/*.sh; do
+
+    # Run it
+    "$file"
+
+    # Log
+    logger -t firstboot -p local3.info "$file"
+
+done
+

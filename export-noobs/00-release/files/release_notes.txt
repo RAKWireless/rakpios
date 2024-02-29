@@ -1,5 +1,107 @@
 UNRELEASED:
-  *
+  * Serial port switching in rc_gui and raspi-config modified to support Raspberry Pi 5
+  * Touch screens now identified with unique per-device strings to enable correct association with display devices
+  * Compatibility with RP1 displays added
+  * Theme files monitored by pixdecor plugin to load changes on the fly
+  * Main menu shortcut to The Magpi website restored
+  * GTK+2 theme harmonised with GTK+3 theme to enable more uniform theming of Qt applications
+  * Battery monitor plugin enabled
+  * Taskbar Preferences menu item added to panel right-click menu
+  * Better reloading of on-the-fly theme changes
+  * Various improvements to Wayfire rendering
+  * Dark GTK theme added
+  * Bug fix - suppressed warning notifications when removing USB devices without mounted filesystems
+  * Bug fix - volume keyboard shortcuts locked up on some devices
+  * Bug fix - correctly handling multiple USB audio devices with same name
+  * Bug fix - some translations not loading in panel plugins
+  * Bug fix - window titlebars disappearing when tiled
+  * Bug fix - local installer service failing to install local deb files
+  * Bug fix - wizard not correctly setting locale when explicit UTF-8 character set required
+  * Bug fix - system updates could fail if an update required the removal of an installed package
+  * Bug fix - prevent file manager windows opening larger than screen size
+  * Bug fix - GPU plugin displaying load percentage as -1
+  * Bug fix - various window manager crashes associated with shadows on certain window types
+  * Bug fix - allow VNC to be enabled if either RealVNC or WayVNC are installed
+  * WayVNC - improved support for encrypted connections
+  * Mathematica now works on Raspberry Pi 5 and 64-bit
+  * Scratch 3 now works on Raspberry Pi 5 and 64-bit
+  * Thonny updated to version 4.1.4
+  * Chromium updated to 119.0.6045.171
+  * Firefox updated to 119.0
+  * gpiod binary tools included in lite images
+  * python3-venv included in lite images
+  * Japanese translations updated
+  * German translation added to Appearance Settings
+  * Raspberry Pi firmware 12af703dd07d7721c1f2f58c6f71d9fe66270838
+  * Linux kernel 6.1.63
+2023-10-10:
+  * Based on Debian bookworm release
+  * Support for Raspberry Pi 5
+  * Desktop now runs on the Wayfire Wayland compositing window manager on Raspberry Pi 4 and 5 platforms; on X11 using the openbox window manager on older platforms
+  * lxpanel replaced with new wf-panel-pi application when running Wayland; existing lxpanel plugins migrated; gpu performance and power plugins added
+  * pcmanfm modified to use Wayland backend when running on Wayland
+  * PipeWire used instead of PulseAudio as audio control subsystem; various changes made to volume control plugin to support this
+  * NetworkManager used instead of dhcpcd as networking interface; various changes made to networking plugin to support this
+  * Firefox browser added as alternative to Chromium; selection of default browser added to Raspberry Pi Configuration tool
+  * WayVNC VNC server used instead of RealVNC when running on Wayland
+  * All customisation and configuration applications modified to customise Wayfire environment as appropriate
+  * grim used as screenshot tool instead of scrot when running on Wayland
+  * eom image viewer used instead of gpicview
+  * evince document viewer used instead of qpdfview
+  * Chromium web browser updated to version 116
+  * VLC media player updated to version 3.0.18
+  * Magnifier program not available when running Wayland; Wayfire includes screen zoom capabilities
+  * CustomPC and Wireframe removed from Bookshelf
+  * Numerous small changes and bug fixes
+  * Switched from raspberrypi-kernel to Debian-based kernel packaging (linux-image-rpi-*)
+  * Switched from raspberrypi-bootloader to Debian based firmware packaging (raspi-firmware)
+  * /boot mount point moved to /boot/firmware
+2023-05-03:
+  * 64-bit Mathematica added to rp-prefapps
+  * Bug fix - occasional segfault in CPU temperature plugin
+  * Bug fix - X server crash when changing screen orientation
+  * Bug fix - X server DPMS not working
+  * Mathematica updated to 13.2.1
+  * Matlab updated to 23.1.0
+  * Chromium updated to 113.0.5672.59
+  * Raspberry Pi Imager updated to 1.7.4
+  * RealVNC server updated to 7.0.1.49073
+  * RealVNC viewer updated to 7.0.1.48981
+  * Updated VLC HW acceleration patch
+  * libcamera
+    - Add generalised statistics handling.
+    - Fix overflow that would cause incorrect calculations in the AGC algorithm.
+    - Improve IMX296 sensor tuning.
+  * libcamera-apps
+    - Improve handling of audio resampling and encoding using libav
+    - Improve performance of QT preview window rendering
+    - Add support for 16-bit Bayer in the DNG writer
+    - Fix for encoder lockup when framerate is set to 0
+    - Improved thumbnail rendering
+  * picamera2
+    - MJPEG server example that uses the hardware MJPEG encoder.
+    - Example showing preview from two cameras in a single Qt app.
+    - H264 encoder accepts frame time interval for SPS headers.
+    - H264 encoder should advertise correct profile/level.
+    - H264 encoder supports constant quality parameter.
+    - Exif DateTime and DateTimeOriginal tags are now added.
+    - Various bug fixes (check Picamera2 release notes for more details).
+  * Some translations added
+  * Raspberry Pi firmware 055e044d5359ded1aacc5a17a8e35365373d0b8b
+  * Linux kernel 6.1.21
+2023-02-21:
+  * glamor now disabled on all platforms other than Raspberry Pi 4 with legacy video driver
+  * msdri3 video driver support added
+  * KiCad added to Recommended Software
+  * Support for new touchscreen driver added to Screen Resolution tool; minor UI tweaks
+  * GTK message dialogs shown with right-justified buttons
+  * Bug fix - updater plugin now does not clear icon when an update has failed
+  * Bug fix - keyboard highlight now shown on GTK switch control
+  * Some Korean and Brazilian translations added
+  * Fix rpi-imager hidden ssid configuration
+  * Install kms++-utils
+  * Raspberry Pi firmware 78852e166b4cf3ebb31d051e996d54792f0994b0
+  * Linux kernel 5.15.84
 2022-09-22:
   * NodeRED removed from Recommended Software and full image - should only be installed via apt
   * Improved speed of startup of lxpanel network controller plugins

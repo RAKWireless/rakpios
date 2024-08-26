@@ -9,8 +9,9 @@ import re
 import subprocess
 import logging
 import docker
+import gpiod
+import select
 
-import RPi.GPIO as GPIO
 from PIL import Image, ImageDraw, ImageFont
 
 from luma.core.interface.serial import i2c
@@ -27,6 +28,9 @@ BORDER = 5
 DELAY = 5
 MARGIN = 2
 ROTATE = 0
+
+INTERRUPT_GPIO_CHIP = "gpiochip0"
+INTERRUPT_GPIO_LINE = 16
 
 # -----------------------------------------------------------------------------
 # Utils
@@ -241,49 +245,6 @@ def power_message(text1, text2):
 
     return True
 
-class Graceful_shutdown:
-    """Catch signals to allow graceful shutdown."""
-
-    def __init__(self):
-        self.receivedSignal = self.receivedTermSignal = False
-        # 1 : SIGHUP 2: SIGINT 3: SIGQUIT 10: SIGUSR1 12:SIGUSR2 15: SIGTERM
-        catchSignals = [
-            1,
-            2,
-            3,
-            10,
-            12,
-            15,
-        ]
-        for signum in catchSignals:
-            signal.signal(signum, self.handler)
-        signal.pause()
-
-    def handler(self, signum, frame):
-        self.lastSignal = signum
-        self.receivedSignal = True
-        if signum in [2, 3, 15]:
-            self.receivedTermSignal = True
-            system_shutdown()
-            sys.exit()
-
-def system_shutdown():
-    timer.cancel()
-    power_message("SYSTEM", "SHUTDOWN")
-    time.sleep(5)
-    # power off the OLED before the system shuts down
-    device.hide()
-
-
-def power_supply_issues(channel):
-    global timer    
-    timer.cancel()
-    power_message("POWER SUPPLY", "ISSUES !")
-    time.sleep(60)
-    timer = RepeatTimer(DELAY, show_page)
-    timer.start()
-
-
 # -----------------------------------------------------------------------------
 # State machine
 # -----------------------------------------------------------------------------
@@ -314,16 +275,98 @@ def show_page(page):
     # Return pointer to next page
     return page
 
+# -----------------------------------------------------------------------------
+# Shutdown
+# -----------------------------------------------------------------------------
+
+class ShutdownHandler:
+    """Catch signals to allow graceful shutdown."""
+
+    def __init__(self):
+        self.receivedSignal = self.receivedTermSignal = False
+        # 1 : SIGHUP 2: SIGINT 3: SIGQUIT 10: SIGUSR1 12:SIGUSR2 15: SIGTERM
+        catchSignals = [
+            1,
+            2,
+            3,
+            10,
+            12,
+            15,
+        ]
+        for signum in catchSignals:
+            signal.signal(signum, self.handler)
+        signal.pause()
+
+    def handler(self, signum, frame):
+        self.lastSignal = signum
+        self.receivedSignal = True
+        if signum in [2, 3, 15]:
+            self.receivedTermSignal = True
+            system_shutdown()
+            sys.exit()
+
+def system_shutdown():
+    global freeze
+    freeze = True
+    power_message("SYSTEM", "SHUTDOWN")
+    time.sleep(5)
+    #ps_thread.stop()
+    # power off the OLED before the system shuts down
+    device.hide()
+
 
 # -----------------------------------------------------------------------------
-# Main loop
+# Power failure detection
 # -----------------------------------------------------------------------------
+
+def power_supply_callback(status):
+    global freeze
+    freeze = not status
+    if freeze:
+        power_message("POWER SUPPLY", "ISSUES !")
+
+def power_supply_monitoring_thread(chip, line):
+
+    chip = gpiod.Chip(chip)
+    line = chip.get_line(line)
+    line.request(consumer="GPOUT", type=gpiod.LINE_REQ_EV_BOTH_EDGES, flags=gpiod.LINE_REQ_FLAG_BIAS_PULL_UP)
+
+    while True:
+        if line.event_wait(sec=1):
+            event = line.event_read()
+            status = (event.type == gpiod.LineEvent.RISING_EDGE)
+            #power_supply_callback(status)
+            if status:
+                power_message("POWER SUPPLY", "ISSUES !")
+
+# -----------------------------------------------------------------------------
+# Thread wrappers
+# -----------------------------------------------------------------------------
+
+class StoppableThread(threading.Thread):
+    """Thread class with a stop() method. The thread itself has to check
+    regularly for the stopped() condition."""
+
+    def __init__(self,  *args, **kwargs):
+        super(StoppableThread, self).__init__(*args, **kwargs)
+        self._stop_event = threading.Event()
+
+    def stop(self):
+        self._stop_event.set()
+
+    def stopped(self):
+        return self._stop_event.is_set()
 
 class RepeatTimer(threading.Timer):
     page = 1
     def run(self):
         while not self.finished.wait(self.interval):
-            self.page = self.function(self.page, *self.args, **self.kwargs)
+            if not freeze:
+                self.page = self.function(self.page, *self.args, **self.kwargs)
+
+# -----------------------------------------------------------------------------
+# Main loop
+# -----------------------------------------------------------------------------
 
 logging.basicConfig(format='[%(asctime)s] %(message)s', level=logging.INFO)
 logging.info(f"RAK7391 OLED info script")
@@ -337,13 +380,17 @@ except Exception:
 
 pages = [intro_page, network_page, docker_page, stats_page]
 show_page(0)
-timer = RepeatTimer(DELAY, show_page)
-timer.start()
 
-# Once detect GPIO 16 is falling, trigger the callback function
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(16, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.add_event_detect(16, GPIO.FALLING, callback=power_supply_issues)
+# Timer that passes the pages
+freeze = False
+timer_thread = RepeatTimer(DELAY, show_page)
+timer_thread.start()
 
-# signal handler for graceful shutdown
-signal_handler = Graceful_shutdown()
+# Power supply monitoring
+ps_thread = StoppableThread(target=power_supply_monitoring_thread, args=(INTERRUPT_GPIO_CHIP, INTERRUPT_GPIO_LINE,))
+ps_thread.start()
+ps_thread.join()
+
+# Signal handler for graceful shutdown
+signal_handler = ShutdownHandler()
+

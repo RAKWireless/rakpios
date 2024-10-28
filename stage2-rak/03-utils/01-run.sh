@@ -10,15 +10,17 @@ on_chroot << EOF
 systemctl enable oled
 EOF
 
-# Add miromico's mioty edge card script
-install -m 755 files/mioty "${ROOTFS_DIR}/usr/local/bin/"
-
 # Add portainer up script
 install -m 755 files/portainer "${ROOTFS_DIR}/usr/local/bin/"
 
 # Add rakpios-cli
 on_chroot << EOF
 runuser -l ${FIRST_USER_NAME} -c 'mkdir $HOME/.local/lib ; curl https://raw.githubusercontent.com/RAKWireless/rakpios-cli/main/rakpios-cli -sSf | bash -s -- --install --silent'
+EOF
+
+# Add mioty-cli
+on_chroot << EOF
+runuser -l ${FIRST_USER_NAME} -c 'curl https://raw.githubusercontent.com/RAKWireless/mioty-cli/master/rakpios-cli -sSf | bash -s -- install'
 EOF
 
 # Add wisblock USB rules

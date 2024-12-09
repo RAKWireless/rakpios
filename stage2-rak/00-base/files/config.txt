@@ -69,10 +69,6 @@ arm_64bit=1
 disable_overscan=1
 
 [cm4]
-# Enable host mode on the 2711 built-in XHCI USB controller.
-# This line should be removed if the legacy DWC2 controller is required
-# (e.g. for USB device mode) or if USB support is not required.
-#otg_mode=1
 
 # Enable USB2
 dtoverlay=dwc2,dr_mode=host
@@ -98,18 +94,36 @@ dtoverlay=pca953x,addr=0x27,pca9555
 #   noant: Disable both antennas
 dtparam=ant1
 
-# Enable dual Raspberry Pi Camera Module 2 and one display (this is specific to the RAK7391)
-# 1. Disable automatically load overlays for detected cameras
-#camera_auto_detect=0
-# 2. Manually load overlays for dual cameras
-#dtoverlay=imx219,cam1
-#dtoverlay=imx219,cam0
-# 3. Run "sudo wget https://datasheets.raspberrypi.com/cmio/dt-blob-disp1-cam2.bin -O /boot/dt-blob.bin" to enable dual cameras and display.
-# 4. No need to add jumpers, just reboot for the dt-blob.bin file to be read
+[cm5]
+
+# Enable USB2
+dtoverlay=dwc2,dr_mode=host
+
+# Enable onboard RTC (this is specific to the RAK7391)
+dtoverlay=i2c-rtc,pcf85063a
+
+# Enable onboard GPIO Expander TPT29555(compatible with PCA9555,this is specific to the RAK7391)
+dtoverlay=pca953x,addr=0x26,pca9555
+dtoverlay=pca953x,addr=0x27,pca9555
+
+# Enable onboard ADS1115 (this is specific to the RAK7391)
+#dtoverlay=ads1115
+#dtparam=cha_enable
+#dtparam=chb_enable
+#dtparam=chc_enable
+#dtparam=chd_enable
+#dtparam=i2c_arm_baudrate=400000
+
+# Antenna setting, values:
+#   ant1: PCB antenna (default)
+#   ant2: External antenna
+#   noant: Disable both antennas
+dtparam=ant1
 
 [all]
 
 [pi4]
+
 # Run as fast as firmware / board allows
 arm_boost=1
 

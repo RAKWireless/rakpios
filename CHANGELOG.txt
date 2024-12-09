@@ -6,11 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1] - 2024-10-28
 
+### Added
+- Enable USB2, RTC and GPIO expanders by default on CM5
+
 ### Changed
 - Updating mioty-cli tool
 
 ### Fixed
 - Fixed error in rakpios-cli modules folder not existing (again)
+- Load static WiFi6 firmware files
 
 ## [0.9.0] - 2024-08-26
 

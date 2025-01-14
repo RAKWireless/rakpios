@@ -1,0 +1,2 @@
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="1a40", ATTRS{idProduct}=="0101", ENV{USB_HUB_TYPE}="fe11s"
+ENV{USB_HUB_TYPE}=="fe11s", SUBSYSTEM=="tty", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="7523", ACTION=="add", SYMLINK+="ttyWB%n"

@@ -2,7 +2,7 @@
 
 # Add custom firstboot script
 install -m 755 files/firstboot-rak "${ROOTFS_DIR}/usr/bin/"
-install -d 766 "${ROOTFS_DIR}/usr/share/firstboot.d/"
+install -d "${ROOTFS_DIR}/usr/share/firstboot.d/"
 install -m 755 files/firstboot.d/* "${ROOTFS_DIR}/usr/share/firstboot.d/"
 sed -i "s|main$|main\nfirstboot-rak\n|" "${ROOTFS_DIR}/usr/lib/raspberrypi-sys-mods/firstboot"
 
@@ -27,12 +27,15 @@ EOF
 
 # Update os-release file
 cat > "${ROOTFS_DIR}/usr/lib/os-release" << EOL
-PRETTY_NAME="RAK PiOS GNU/Linux (${RELEASE})"
-NAME="RAK PiOS GNU/Linux"
-VERSION_ID="${IMG_NAME}"
-VERSION="${RELEASE}"
-ID="rakpios"
+PRETTY_NAME="${NAME} ${VERSION} (${RELEASE})"
+NAME="${NAME}"
+VERSION="${VERSION}"
+VERSION_ID="${NAME,,}-${VERSION}-${ARCH}"
+VERSION_CODENAME="${RELEASE}"
+BUILD_ID="${IMG_DATE}"
+ID="${NAME,,}"
 ID_LIKE="debian"
+VARIANT="${ARCH}"
 HOME_URL="http://www.rakwireless.com/"
 SUPPORT_URL="${PI_GEN_REPO}"
 BUG_REPORT_URL="${PI_GEN_REPO}/issues"

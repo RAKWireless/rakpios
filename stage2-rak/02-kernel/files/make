@@ -30,7 +30,7 @@ CORES=${CORES:=$(grep "^processor" /proc/cpuinfo | sort -u | wc -l)}
 CORES=${CORES:=1}
 
 # Commit to build
-KERNEL_TAG=${KERNEL_TAG:-"rpi-6.1.y"}
+KERNEL_TAG=${KERNEL_TAG:-"rpi-6.6.y"}
 
 # Machine to build for
 MACHINE=${MACHINE:-"cm4"}

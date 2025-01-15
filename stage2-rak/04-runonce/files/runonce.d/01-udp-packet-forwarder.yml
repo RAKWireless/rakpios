@@ -9,5 +9,6 @@ services:
     privileged: true
     network_mode: host
     environment:
-      MODEL: "RAK5146"
-      RADIO_DEV: "ANY"
+      MODEL: RAK5146
+      INTERFACE: SPI
+      USE_LIBGPIOD: 1

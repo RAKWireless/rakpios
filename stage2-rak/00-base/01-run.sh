@@ -6,6 +6,10 @@ install -d "${ROOTFS_DIR}/usr/share/firstboot.d/"
 install -m 755 files/firstboot.d/* "${ROOTFS_DIR}/usr/share/firstboot.d/"
 sed -i "s|main$|main\nfirstboot-rak\n|" "${ROOTFS_DIR}/usr/lib/raspberrypi-sys-mods/firstboot"
 
+# Build overlays
+dtc -I dts -O dtb files/rak7391.dts -o files/rak7391.dtbo
+install -m 755 files/rak7391.dtbo "${ROOTFS_DIR}/boot/firmware/overlays/"
+
 # Update config.txt
 install -m 755 files/config.txt "${ROOTFS_DIR}/boot/firmware/"
 

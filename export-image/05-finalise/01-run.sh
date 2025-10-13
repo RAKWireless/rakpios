@@ -2,8 +2,8 @@
 
 IMG_FILE="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.img"
 INFO_FILE="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.info"
-
-sed -i 's/^update_initramfs=.*/update_initramfs=all/' "${ROOTFS_DIR}/etc/initramfs-tools/update-initramfs.conf"
+SBOM_FILE="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.sbom"
+BMAP_FILE="${STAGE_WORK_DIR}/${IMG_FILENAME}${IMG_SUFFIX}.bmap"
 
 on_chroot << EOF
 update-initramfs -k all -c
@@ -14,6 +14,11 @@ if hash hardlink 2>/dev/null; then
 	hardlink -t /usr/share/doc
 fi
 EOF
+
+if [ -f "${ROOTFS_DIR}/etc/initramfs-tools/update-initramfs.conf" ]; then
+	sed -i 's/^update_initramfs=.*/update_initramfs=yes/' "${ROOTFS_DIR}/etc/initramfs-tools/update-initramfs.conf"
+	sed -i 's/^MODULES=.*/MODULES=dep/' "${ROOTFS_DIR}/etc/initramfs-tools/initramfs.conf"
+fi
 
 if [ -d "${ROOTFS_DIR}/home/${FIRST_USER_NAME}/.config" ]; then
 	chmod 700 "${ROOTFS_DIR}/home/${FIRST_USER_NAME}/.config"
@@ -61,9 +66,7 @@ if ! [ -L "${ROOTFS_DIR}/boot/issue.txt" ]; then
 	ln -s firmware/issue.txt "${ROOTFS_DIR}/boot/issue.txt"
 fi
 
-
 cp "$ROOTFS_DIR/etc/rpi-issue" "$INFO_FILE"
-
 
 {
 	if [ -f "$ROOTFS_DIR/usr/share/doc/raspberrypi-kernel/changelog.Debian.gz" ]; then
@@ -83,12 +86,26 @@ cp "$ROOTFS_DIR/etc/rpi-issue" "$INFO_FILE"
 	dpkg -l --root "$ROOTFS_DIR"
 } >> "$INFO_FILE"
 
+if hash syft 2>/dev/null; then
+	syft scan dir:"${ROOTFS_DIR}" \
+		--base-path="${ROOTFS_DIR}" \
+		--source-name="${IMG_NAME}${IMG_SUFFIX}" \
+		--source-version="${IMG_DATE}" \
+		-o spdx-json="${SBOM_FILE}"
+fi
+
 ROOT_DEV="$(awk "\$2 == \"${ROOTFS_DIR}\" {print \$1}" /etc/mtab)"
 
 unmount "${ROOTFS_DIR}"
 zerofree "${ROOT_DEV}"
 
 unmount_image "${IMG_FILE}"
+
+if hash bmaptool 2>/dev/null; then
+	bmaptool create \
+		-o "${BMAP_FILE}" \
+		"${IMG_FILE}"
+fi
 
 mkdir -p "${DEPLOY_DIR}"
 
@@ -115,4 +132,10 @@ none | *)
 ;;
 esac
 
+if [ -f "${SBOM_FILE}" ]; then
+	xz -c "${SBOM_FILE}" > "$DEPLOY_DIR/$(basename "${SBOM_FILE}").xz"
+fi
+if [ -f "${BMAP_FILE}" ]; then
+	cp "$BMAP_FILE" "$DEPLOY_DIR/"
+fi
 cp "$INFO_FILE" "$DEPLOY_DIR/"

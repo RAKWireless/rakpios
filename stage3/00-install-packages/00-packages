@@ -5,13 +5,13 @@ git
 policykit-1
 gvfs
 rfkill
-chromium-browser rpi-chromium-mods libwidevinecdm0
+chromium rpi-chromium-mods libwidevinecdm0
 firefox rpi-firefox-mods
 gldriver-test
 fonts-droid-fallback
 fonts-liberation2
 obconf
-arandr
+raindrop
 libcamera-tools
 rpicam-apps
 python3-picamera2

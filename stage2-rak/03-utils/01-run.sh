@@ -10,6 +10,9 @@ on_chroot << EOF
 systemctl enable oled
 EOF
 
+# Add reset_password utility
+install -m 755 files/reset_password "${ROOTFS_DIR}/usr/local/bin/"
+
 # Add portainer up script
 install -m 755 files/portainer "${ROOTFS_DIR}/usr/local/bin/"
 
@@ -21,6 +24,11 @@ EOF
 # Add mioty-cli
 on_chroot << EOF
 runuser -l ${FIRST_USER_NAME} -c 'curl https://raw.githubusercontent.com/RAKWireless/mioty-cli/master/mioty-cli -sSf | bash -s -- install'
+EOF
+
+# Add rak739x-hardware-test
+on_chroot << EOF
+runuser -l ${FIRST_USER_NAME} -c 'cd /home/${FIRST_USER_NAME}/.local; mkdir share; cd share ; git clone  --recurse-submodules https://github.com/RAKWireless/rak739x-hardware-test'
 EOF
 
 # Add wisblock USB rules

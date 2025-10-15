@@ -49,12 +49,12 @@ STAGE_LIST="stage0 stage1 stage2 stage2-rak"
 PI_GEN_REPO=https://github.com/RAKWireless/rakpios
 KERNEL_BUILD=0
 KERNEL_CACHED=1
-KERNEL_TAG=rpi-6.6.y
+KERNEL_TAG=rpi-6.12.y
 
 ```
 
 For more details about the original configurations, please check the original `README.md` . For custom configuration tags, now you can define whether you want to build the kernel (`KERNEL_BUILD` and `KERNEL_TAG` variables), use the cached image (`KERNEL_CACHED` variable) or just leave it to the official kernel. 
-If `KERNEL_BUILD` is set to 1 but no `KERNEL_TAG` is defined then it defaults to the HEAD of the `rpi-6.6.y` branch. But please mind that some specific kernel patches (like GPIO Expander support) will not be applied since they are version-dependent.
+If `KERNEL_BUILD` is set to 1 but no `KERNEL_TAG` is defined then it defaults to the HEAD of the `rpi-6.12.y` branch. But please mind that some specific kernel patches (like GPIO Expander support) will not be applied since they are version-dependent.
 The final step is to launch the build.sh script：
 
 ```bash

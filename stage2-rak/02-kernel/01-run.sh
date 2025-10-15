@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
 export ARCH=${ARCH:-"arm64"}
-export KERNEL_TAG=${KERNEL_TAG:-"rpi-6.6.y"}
+export KERNEL_TAG=${KERNEL_TAG:-"rpi-6.12.y"}
 
 pushd files >> /dev/null
 

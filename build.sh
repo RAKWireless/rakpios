@@ -123,6 +123,20 @@ run_stage(){
 	log "End ${STAGE_DIR}"
 }
 
+term() {
+	if [ "$?" -ne 0 ]; then
+		log "Build failed"
+	else
+		log "Build finished"
+	fi
+	unmount "${STAGE_WORK_DIR}"
+	if [ "$STAGE" = "export-image" ]; then
+		for img in "${STAGE_WORK_DIR}/"*.img; do
+			unmount_image "$img"
+		done
+	fi
+}
+
 if [ "$(id -u)" != "0" ]; then
 	echo "Please run as root" 1>&2
 	exit 1
@@ -156,22 +170,6 @@ do
 			;;
 	esac
 done
-
-term() {
-	if [ "$?" -ne 0 ]; then
-		log "Build failed"
-	else
-		log "Build finished"
-	fi
-	unmount "${STAGE_WORK_DIR}"
-	if [ "$STAGE" = "export-image" ]; then
-		for img in "${STAGE_WORK_DIR}/"*.img; do
-			unmount_image "$img"
-		done
-	fi
-}
-
-trap term EXIT INT TERM
 
 export PI_GEN=${PI_GEN:-pi-gen}
 export PI_GEN_REPO=${PI_GEN_REPO:-https://github.com/RPi-Distro/pi-gen}
@@ -224,6 +222,7 @@ export PUBKEY_SSH_FIRST_USER
 
 export CLEAN
 export APT_PROXY
+export TEMP_REPO
 
 export STAGE
 export STAGE_DIR
@@ -260,7 +259,23 @@ if [ "$SETFCAP" != "1" ]; then
 	export CAPSH_ARG="--drop=cap_setfcap"
 fi
 
+mkdir -p "${WORK_DIR}"
+trap term EXIT INT TERM
+
 dependencies_check "${BASE_DIR}/depends"
+
+
+PAGESIZE=$(getconf PAGESIZE)
+if [ "$ARCH" == "armhf" ] && [ "$PAGESIZE" != "4096" ]; then
+	echo
+	echo "ERROR: Building an $ARCH image requires a kernel with a 4k page size (current: $PAGESIZE)"
+	echo "On Raspberry Pi OS (64-bit), you can switch to a suitable kernel by adding the following to /boot/firmware/config.txt and rebooting:"
+	echo
+	echo "kernel=kernel8.img"
+	echo "initramfs initramfs8 followkernel"
+	echo
+	exit 1
+fi
 
 echo "Checking native $ARCH executable support..."
 if ! arch-test -n "$ARCH"; then
@@ -303,11 +318,17 @@ if [[ "${PUBKEY_ONLY_SSH}" = "1" && -z "${PUBKEY_SSH_FIRST_USER}" ]]; then
 	exit 1
 fi
 
-mkdir -p "${WORK_DIR}"
 log "Begin ${BASE_DIR}"
 
 STAGE_LIST=${STAGE_LIST:-${BASE_DIR}/stage*}
 export STAGE_LIST
+
+EXPORT_CONFIG_DIR=$(realpath "${EXPORT_CONFIG_DIR:-"${BASE_DIR}/export-image"}")
+if [ ! -d "${EXPORT_CONFIG_DIR}" ]; then
+	echo "EXPORT_CONFIG_DIR invalid: ${EXPORT_CONFIG_DIR} does not exist"
+	exit 1
+fi
+export EXPORT_CONFIG_DIR
 
 for STAGE_DIR in $STAGE_LIST; do
 	STAGE_DIR=$(realpath "${STAGE_DIR}")
@@ -316,7 +337,7 @@ done
 
 CLEAN=1
 for EXPORT_DIR in ${EXPORT_DIRS}; do
-	STAGE_DIR=${BASE_DIR}/export-image
+	STAGE_DIR=${EXPORT_CONFIG_DIR}
 	# shellcheck source=/dev/null
 	source "${EXPORT_DIR}/EXPORT_IMAGE"
 	EXPORT_ROOTFS_DIR=${WORK_DIR}/$(basename "${EXPORT_DIR}")/rootfs

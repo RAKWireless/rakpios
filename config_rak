@@ -1,5 +1,5 @@
 NAME="RAKPiOS"
-VERSION=0.9.1
+VERSION=0.9.3
 ARCH=arm64
 RELEASE=bookworm
 
@@ -16,5 +16,5 @@ STAGE_LIST="stage0 stage1 stage2 stage2-rak"
 
 PI_GEN_REPO=https://github.com/RAKWireless/rakpios
 KERNEL_BUILD=0
-KERNEL_CACHED=1
-KERNEL_TAG=rpi-6.6.y
+KERNEL_CACHED=0
+KERNEL_TAG=rpi-6.12.y

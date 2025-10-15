@@ -4,14 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.3] - 2025-10-13
+## [0.9.3] - 2025-10-14
 
 ### Changed
-- Based on upstream 2025-10-01-raspios-bookworm-arm64 6.12
+- Based on upstream 2025-10-01-raspios-bookworm-arm64 with default 6.12 kernel
 - Up to date mioty utility with dependencies
+- Refactor config.txt for compatibility
 
 ### Added
 - Custom overlay for RAK7391 with pin name definitions
+- Hardware test suite
+- Password reset utility
 
 ## [0.9.1] - 2024-10-28
 

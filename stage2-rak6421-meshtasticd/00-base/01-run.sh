@@ -26,7 +26,7 @@ pip3 install --break-system-packages --upgrade "meshtastic[cli]"
 EOF
 
 # Configure meshtasticd - uncomment Webserver Port
-on_chroot << EOF
-sed -i 's/^#  Port: 9443/  Port: 9443/' /etc/meshtasticd/config.yaml
-EOF
+# on_chroot << EOF
+# sed -i 's/^#  Port: 9443/  Port: 9443/' /etc/meshtasticd/config.yaml
+# EOF
 

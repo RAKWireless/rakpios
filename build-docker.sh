@@ -38,24 +38,32 @@ do
 	esac
 done
 
-# Ensure that the configuration file is an absolute path
-if test -x /usr/bin/realpath; then
-	CONFIG_FILE=$(realpath -s "$CONFIG_FILE" || realpath "$CONFIG_FILE")
+# Ensure that the configuration file is an absolute path. Docker bind mounts
+# require this on macOS, otherwise a relative source is treated as a volume name.
+if [ -n "${CONFIG_FILE}" ] && [ "${CONFIG_FILE#/}" = "${CONFIG_FILE}" ]; then
+	if [ -f "${CONFIG_FILE}" ]; then
+		CONFIG_FILE="$(CDPATH='' cd -- "$(dirname -- "${CONFIG_FILE}")" && pwd)/$(basename -- "${CONFIG_FILE}")"
+	elif [ -f "${DIR}/${CONFIG_FILE}" ]; then
+		CONFIG_FILE="${DIR}/${CONFIG_FILE}"
+	fi
 fi
 
-# Ensure that the confguration file is present
-if test -z "${CONFIG_FILE}"; then
+# Ensure that the configuration file is present
+if [ -z "${CONFIG_FILE}" ] || [ ! -f "${CONFIG_FILE}" ]; then
 	echo "Configuration file need to be present in '${DIR}/config' or path passed as parameter"
 	exit 1
 else
 	# shellcheck disable=SC1090
-	source ${CONFIG_FILE}
+	source "${CONFIG_FILE}"
 fi
 
 CONTAINER_NAME=${CONTAINER_NAME:-pigen_work}
 CONTINUE=${CONTINUE:-0}
 PRESERVE_CONTAINER=${PRESERVE_CONTAINER:-0}
 PIGEN_DOCKER_OPTS=${PIGEN_DOCKER_OPTS:-""}
+PIGEN_IMAGE=${PIGEN_IMAGE:-pi-gen}
+USE_EXISTING_PIGEN_IMAGE=${USE_EXISTING_PIGEN_IMAGE:-0}
+PIGEN_SOURCE_VOLUME=""
 
 if [ -z "${IMG_NAME}" ]; then
 	echo "IMG_NAME not set in 'config'" 1>&2
@@ -80,9 +88,18 @@ if [ "${CONTAINER_EXISTS}" != "" ] && [ "${CONTINUE}" != "1" ]; then
 fi
 
 # Modify original build-options to allow config file to be mounted in the docker container
-BUILD_OPTS="$(echo "${BUILD_OPTS:-}" | sed -E 's@\-c\s?([^ ]+)@-c /config@')"
+BUILD_OPTS="$(echo "${BUILD_OPTS:-}" | sed -E 's@(^|[[:space:]])-c[[:space:]]*[^[:space:]]+@\1-c /config@')"
 
-${DOCKER} build --build-arg BASE_IMAGE=debian:bookworm --load -t pi-gen "${DIR}"
+if [ "${USE_EXISTING_PIGEN_IMAGE}" = "1" ]; then
+  if ! ${DOCKER} image inspect "${PIGEN_IMAGE}" >/dev/null 2>&1 && ! ${DOCKER} image ls -q "${PIGEN_IMAGE}" | grep -q .; then
+    echo "Docker image ${PIGEN_IMAGE} not found. Build it first or set PIGEN_IMAGE to an existing image."
+    exit 1
+  fi
+  echo "Using existing Docker image ${PIGEN_IMAGE}"
+  PIGEN_SOURCE_VOLUME="--volume ${DIR}:/pi-gen-src:ro"
+else
+  ${DOCKER} build --build-arg BASE_IMAGE=debian:bookworm --load -t "${PIGEN_IMAGE}" "${DIR}"
+fi
 
 if [ "${CONTAINER_EXISTS}" != "" ]; then
   DOCKER_CMDLINE_NAME="${CONTAINER_NAME}_cont"
@@ -136,11 +153,15 @@ time ${DOCKER} run \
   --name "${DOCKER_CMDLINE_NAME}" \
   --privileged \
   ${PIGEN_DOCKER_OPTS} \
+  ${PIGEN_SOURCE_VOLUME} \
   --volume "${CONFIG_FILE}":/config:ro \
   -e "GIT_HASH=${GIT_HASH}" \
   $DOCKER_CMDLINE_POST \
-  pi-gen \
+  "${PIGEN_IMAGE}" \
   bash -e -o pipefail -c "
+    if [ '${USE_EXISTING_PIGEN_IMAGE}' = '1' ]; then
+      rsync -a --delete --exclude /work --exclude /deploy /pi-gen-src/ /pi-gen/
+    fi &&
     dpkg-reconfigure qemu-user-static &&
     # binfmt_misc is sometimes not mounted with debian bookworm image
     (mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc || true) &&

@@ -1,0 +1,24 @@
+services:
+  meshmonitor:
+    image: ghcr.io/yeraze/meshmonitor:latest
+    container_name: meshmonitor
+    ports:
+      - "8080:3001"
+    restart: unless-stopped
+    volumes:
+      - meshmonitor-data:/data
+    extra_hosts:
+      # Lets the container reach meshtasticd on the host (port 4403).
+      # Do NOT use 127.0.0.1 here — inside Docker that points to the container itself.
+      - "host.docker.internal:host-gateway"
+    environment:
+      - MESHTASTIC_NODE_IP=host.docker.internal
+      - MESHTASTIC_TCP_PORT=4403
+      # CORS allowed origins — * permits any origin for debugging only.
+      # Change to your actual domain(s) (e.g. http://192.168.1.10:8080) before production use.
+      - ALLOWED_ORIGINS=*
+      
+
+volumes:
+  meshmonitor-data:
+    driver: local

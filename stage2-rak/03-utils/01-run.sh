@@ -22,14 +22,14 @@ runuser -l ${FIRST_USER_NAME} -c 'curl https://raw.githubusercontent.com/RAKWire
 EOF
 
 # Add mioty-cli
-on_chroot << EOF
-runuser -l ${FIRST_USER_NAME} -c 'curl https://raw.githubusercontent.com/RAKWireless/mioty-cli/master/mioty-cli -sSf | bash -s -- install'
-EOF
+# on_chroot << EOF
+# runuser -l ${FIRST_USER_NAME} -c 'curl https://raw.githubusercontent.com/RAKWireless/mioty-cli/master/mioty-cli -sSf | bash -s -- install'
+# EOF
 
 # Add rak739x-hardware-test
-on_chroot << EOF
-runuser -l ${FIRST_USER_NAME} -c 'cd /home/${FIRST_USER_NAME}/.local; mkdir share; cd share ; git clone  --recurse-submodules https://github.com/RAKWireless/rak739x-hardware-test'
-EOF
+# on_chroot << EOF
+# runuser -l ${FIRST_USER_NAME} -c 'cd /home/${FIRST_USER_NAME}/.local; mkdir share; cd share ; git clone  --recurse-submodules https://github.com/RAKWireless/rak739x-hardware-test'
+# EOF
 
 # Add wisblock USB rules
 install -m 644 files/99-wisblock.rules "${ROOTFS_DIR}/etc/udev/rules.d/"

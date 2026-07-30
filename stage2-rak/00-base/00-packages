@@ -8,8 +8,6 @@ curl
 gnupg
 vim
 git
-figlet
 i2c-tools
 jq
 systemd-timesyncd
-tmux

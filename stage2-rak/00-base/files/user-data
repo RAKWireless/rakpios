@@ -1,0 +1,7 @@
+#cloud-config
+
+growpart:
+  mode: auto
+  devices: [/]
+
+resize_rootfs: true

@@ -31,9 +31,9 @@ We defined some original configuration tags and also introduced some custom conf
 
 ```
 NAME="RAKPiOS"
-VERSION=0.8.1
+VERSION=0.10.0
 ARCH=arm64
-RELEASE=bookworm
+RELEASE=trixie
 
 IMG_NAME="${NAME,,}-${VERSION}-${ARCH}"
 PI_GEN_RELEASE="${NAME,,}-${VERSION}-${RELEASE}"
@@ -45,16 +45,15 @@ FIRST_USER_PASS=changeme
 DISABLE_FIRST_BOOT_USER_RENAME=1
 ENABLE_SSH=1
 STAGE_LIST="stage0 stage1 stage2 stage2-rak"
-
+DEPLOY_COMPRESSION=xz
 PI_GEN_REPO=https://github.com/RAKWireless/rakpios
-KERNEL_BUILD=0
-KERNEL_CACHED=1
-KERNEL_TAG=rpi-6.6.y
 
+KERNEL_STRATEGY=default
+KERNEL_TAG=rpi-6.12.y
 ```
 
-For more details about the original configurations, please check the original `README.md` . For custom configuration tags, now you can define whether you want to build the kernel (`KERNEL_BUILD` and `KERNEL_TAG` variables), use the cached image (`KERNEL_CACHED` variable) or just leave it to the official kernel. 
-If `KERNEL_BUILD` is set to 1 but no `KERNEL_TAG` is defined then it defaults to the HEAD of the `rpi-6.6.y` branch. But please mind that some specific kernel patches (like GPIO Expander support) will not be applied since they are version-dependent.
+For more details about the original configurations, please check the original `README.md` . For custom configuration tags, now you can define whether you want to build the kernel (set `KERNEL_STRATEGY` to `build` and `KERNEL_TAG` to the version to build), use the cached image (set `KERNEL_STRATEGY` to `cached`) or just leave it to the official kernel (set `KERNEL_STRATEGY` to `default` or leave it undefined). 
+If `KERNEL_STRATEGY` is set to `build` but no `KERNEL_TAG` is defined then it defaults to the HEAD of the `rpi-6.12.y` branch. But please mind that some specific kernel patches (like GPIO Expander support) will not be applied since they are version-dependent.
 The final step is to launch the build.sh script：
 
 ```bash
@@ -91,4 +90,62 @@ There are a number of different directories in the `stage2-rak` directory:
 - In the case of WiFi-enabled CM4 modules and Raspberry Pi, the image will automatically create an access point when the device boots and no other connectivity options are enabled. This feature is based on [WiFi-connect](https://github.com/balena-os/wifi-connect) developed by Balena.
   
   This access point, named `RAK_XXXX` (where `XXXX` represents the last four digits of the `eth0` MAC address), enables users to configure an existing connection. The access point is secured with the password `rakwireless`. After connecting to the access point from a mobile phone or laptop, the captive portal will be detected and the web page will automatically open. In the event that the captive portal does not automatically redirect, please browse to `192.168.230.1` to access the captive portal.
+
+## Branch management
+
+The main development branch is "arm64". This holds the latest version of RAKPiOS. Stabel releases are tagged on the arm64 branch. 
+
+The repository management strategy is as follows:
+
+### Upstream new releases
+
+We create a new "release-xxx" branch based on rakpios/arm64 and merge remote changes:
+
+```
+git fetch upstream --tags
+git tag -l '*trixie-arm64*' | sort
+git checkout arm64
+git checkout -b release-x.y.z
+git merge 2025-12-04-raspios-trixie-arm64 --no-ff -m "Merge upstream tag '2025-12-04-raspios-trixie-arm64'"
+
+# ... work ...
+
+git checkout arm64
+git merge --no-ff release-x.y.z
+git tag -a YYYY-MM-DD-rakpios-x.y.z-trixie-arm64 -m "RAKPiOS vX.Y.Z"
+git push github arm64
+git push --tags
+git branch -d release-x.y.z
+```
+
+### Feature Branches
+
+```
+git checkout arm64 && git pull github arm64
+git checkout -b feature/<name>
+
+# ... work ...
+
+git push github feature/<name>
+```
+
+And Open PR → arm64
+If arm64 moves forward during development:
+
+```
+git fetch github && git rebase github/arm64
+```
+
+
+### Fix Branches
+
+```
+git checkout -b fix/<description>
+
+# ... fix ...
+
+git push github fix/<description>
+```
+
+And open PR → arm64
 

@@ -7,9 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.10.0] - Unreleased
 
 ### Changed
-- Based on upstream 2025-12-04-raspios-trixie-arm64 with default 6.12 kernel
+- Based on upstream 2026-06-18-raspios-trixie-arm64 with default 6.12 kernel
 - Up to date mioty utility with dependencies
 - Refactor config.txt for compatibility
+- Build now requires qemu-user-binfmt instead of qemu-user-static (upstream change)
 
 ### Added
 - Custom overlay for RAK7391 with pin name definitions

@@ -57,7 +57,7 @@ If `KERNEL_STRATEGY` is set to `build` but no `KERNEL_TAG` is defined then it de
 The final step is to launch the build.sh script：
 
 ```bash
-apt-get install coreutils quilt parted qemu-user-static debootstrap zerofree zip \
+apt-get install coreutils quilt parted qemu-user-binfmt debootstrap zerofree zip \
 dosfstools libarchive-tools libcap2-bin grep rsync xz-utils file git curl bc \
 gpg pigz xxd arch-test
 ./build.sh -c config_rak

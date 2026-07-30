@@ -1,8 +1,12 @@
+# Ignore all dotfiles except for .gitignore and .dockerignore
+.*
+!.gitignore
+!.dockerignore
+
+# Ignore build distribution artifacts
 deploy/*
 work/*
-config
-postrun.sh
+
+# Ignore custom built setting files
 SKIP
 SKIP_IMAGES
-.pc
-*-pc

@@ -11,11 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Up to date mioty utility with dependencies
 - Refactor config.txt for compatibility
 - Build now requires qemu-user-binfmt instead of qemu-user-static (upstream change)
+- ModemManager is no longer installed, following upstream. NetworkManager cannot
+  manage cellular modems without it, so the wwan0 raw IP hook only applies if you
+  install modemmanager yourself
 
 ### Added
 - Custom overlay for RAK7391 with pin name definitions
 - Hardware test suite
 - Password reset utility
+- Enable A/B bootloader updates on Pi 5 and CM5 (dtoverlay=nospi10)
 
 ## [0.9.2] - 2025-02-17
 

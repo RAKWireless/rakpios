@@ -80,4 +80,10 @@ otg_mode=1
 [cm5]
 dtoverlay=dwc2,dr_mode=host
 
+# Free spi10 so the firmware can do A/B bootloader updates. [pi5] covers the
+# CM5 as well, so this applies to CM5-fitted carriers too - nothing here uses
+# spi10, the RAK peripherals are all on spi0.
+[pi5]
+dtoverlay=nospi10
+
 [all]

@@ -11,3 +11,8 @@ git
 i2c-tools
 jq
 systemd-timesyncd
+
+# Follow upstream and keep ModemManager out. stage2 asks for this too, but it
+# does so before network-manager is installed, and network-manager recommends
+# modemmanager - so it has to be repeated here, after stage2, to take effect.
+modemmanager-

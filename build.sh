@@ -255,8 +255,7 @@ source "${SCRIPT_DIR}/dependencies_check"
 export NAME=${NAME:-"RAKPiOS"}
 export VERSION
 export ARCH=${ARCH:-"arm64"}
-export KERNEL_BUILD=${KERNEL_BUILD:-0}
-export KERNEL_CACHED=${KERNEL_CACHED:-0}
+export KERNEL_STRATEGY=${KERNEL_STRATEGY:-"default"}
 export KERNEL_TAG
 
 if [ "$SETFCAP" != "1" ]; then

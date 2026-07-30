@@ -1,11 +1,12 @@
 #!/bin/bash -e
 
 export ARCH=${ARCH:-"arm64"}
-export KERNEL_TAG=${KERNEL_TAG:-"rpi-6.6.y"}
+export KERNEL_TAG=${KERNEL_TAG:-"rpi-6.12.y"}
+KERNEL_STRATEGY=${KERNEL_STRATEGY:-"default"}
 
 pushd files >> /dev/null
 
-if [[ ${KERNEL_BUILD:-0} -eq 1 ]]; then
+if [[ "${KERNEL_STRATEGY}" == "build" ]]; then
 
     echo "Building kernel"
     chmod +x ./make
@@ -54,7 +55,7 @@ if [[ ${KERNEL_BUILD:-0} -eq 1 ]]; then
     # Clean up
     rm -rf linux modules
 
-elif [[ ${KERNEL_CACHED:-1} -eq 1 ]]; then
+elif [[ "${KERNEL_STRATEGY}" == "cached" ]]; then
 
     echo "Using cached kernel"
     for file in `ls *.kernel.zip`; do

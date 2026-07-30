@@ -18,6 +18,13 @@ install -m 755 files/rak7391.dtbo "${ROOTFS_DIR}/boot/firmware/overlays/"
 # Update config.txt
 install -m 755 files/config.txt "${ROOTFS_DIR}/boot/firmware/"
 
+# Add carrier board detection (fills in the RAK BOARD block in config.txt)
+install -m 755 files/rak-board-detect "${ROOTFS_DIR}/usr/local/bin/"
+install -m 644 files/rak-board-detect.service "${ROOTFS_DIR}/etc/systemd/system/"
+on_chroot << EOF
+systemctl enable rak-board-detect
+EOF
+
 # Enable SSH
 on_chroot << EOF
 sudo raspi-config nonint do_ssh 0

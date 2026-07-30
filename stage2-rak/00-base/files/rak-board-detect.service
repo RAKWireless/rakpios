@@ -1,0 +1,16 @@
+[Unit]
+Description=Detect the RAK carrier board and apply its device tree overlays
+Documentation=file:/usr/local/bin/rak-board-detect
+# Needs /dev/i2c-1 (i2c-dev from /etc/modules) and an enumerated PCI bus.
+# cloud-init.target so we never reboot while the first-boot rootfs resize
+# is still running.
+After=systemd-modules-load.service cloud-init.target
+ConditionPathIsReadWrite=/boot/firmware
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/rak-board-detect --boot
+RemainAfterExit=no
+
+[Install]
+WantedBy=multi-user.target

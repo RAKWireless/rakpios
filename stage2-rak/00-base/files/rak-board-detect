@@ -1,0 +1,220 @@
+#!/bin/bash -e
+
+# Detect which RAK carrier board we are running on and write the matching
+# overlay lines into config.txt, between the RAK BOARD markers.
+#
+# All three carriers use a CM4/CM5, so the [cm4]/[cm5] conditionals in
+# config.txt cannot tell them apart. Order matters here: only the RAK7391 has
+# the PCA9555 GPIO expanders, and only the RAK7392 has the RTL8111H NICs.
+#
+# Overlays only take effect at boot, so --boot reboots once when the block
+# changes. That also means moving an SD card between carriers re-detects and
+# fixes itself on the next boot.
+#
+# Usage:
+#   rak-board-detect              report the detected board and apply it
+#   rak-board-detect rak7392      force a board instead of detecting
+#   rak-board-detect --boot       apply, and reboot if the block changed
+#
+# A board name in /boot/firmware/rak-board overrides detection permanently.
+
+CONFIG_TXT=${CONFIG_TXT:-/boot/firmware/config.txt}
+OVERRIDE_FILE=${OVERRIDE_FILE:-/boot/firmware/rak-board}
+STATE_DIR=${STATE_DIR:-/var/lib/rak-board-detect}
+BEGIN_MARKER="# BEGIN RAK BOARD"
+END_MARKER="# END RAK BOARD"
+I2C_BUS=1
+MAX_REBOOTS=3
+
+# i2cdetect prints "UU" when a kernel driver already owns the address and the
+# bare address when it is free, so this works both before and after the
+# rak7391 overlay has been applied.
+i2c_present() {
+    local addr=$1 row col cell
+    row="${addr%?}0:"
+    col=$(( 0x${addr#?} + 2 ))
+    cell=$( i2cdetect -y "${I2C_BUS}" 2>/dev/null | awk -v r="${row}" -v c="${col}" '$1 == r { print $c }' )
+    [ -n "${cell}" ] && [ "${cell}" != "--" ]
+}
+
+# pciutils is not part of the image, so read the IDs straight out of sysfs.
+pci_present() {
+    local vendor=$1 device=$2 dev
+    for dev in /sys/bus/pci/devices/*; do
+        [ -r "${dev}/vendor" ] && [ -r "${dev}/device" ] || continue
+        [ "$( cat "${dev}/vendor" )" = "${vendor}" ] || continue
+        [ "$( cat "${dev}/device" )" = "${device}" ] && return 0
+    done
+    return 1
+}
+
+ethernet_ports() {
+    local count=0 iface
+    for iface in /sys/class/net/*; do
+        [ -e "${iface}/device" ] || continue     # skip lo and virtual interfaces
+        [ -e "${iface}/wireless" ] && continue   # skip wifi
+        [ -e "${iface}/phy80211" ] && continue
+        count=$(( count + 1 ))
+    done
+    printf '%s\n' "${count}"
+}
+
+detect_board() {
+    # The RAK7391 is the only carrier with the two PCA9555 GPIO expanders.
+    if i2c_present 26 && i2c_present 27; then
+        printf 'rak7391\n'
+        return
+    fi
+
+    # The RAK7392 is the only carrier with RTL8111H NICs (two 1G ports behind
+    # the ASM1184e switch). The 2.5G RTL8125 is no help - the RAK7391 has one
+    # too, and so does the RAK7392.
+    if pci_present 0x10ec 0x8168; then
+        printf 'rak7392\n'
+        return
+    fi
+
+    # Fallback for RTL8111H variants whose PCI device ID is not 0x8168: the
+    # RAK7392 has four Ethernet ports, the RAK7393 has one.
+    if [ "$( ethernet_ports )" -ge 3 ]; then
+        printf 'rak7392\n'
+        return
+    fi
+
+    printf 'rak7393\n'
+}
+
+overlays_for() {
+    case "$1" in
+        rak7391)
+            # GPIO expanders, with the IO0_x..IO3_x line names (rak7391.dts)
+            printf 'dtoverlay=rak7391\n'
+            ;;
+        rak7392)
+            # GPIO7 is WisBlock_RESET here, not spi0 CS1: only CE0 reaches the slot
+            printf 'dtoverlay=spi0-1cs\n'
+            # GPIO12/13 are otherwise unused and keep the GPS path open
+            printf 'dtoverlay=uart5\n'
+            ;;
+        rak7393)
+            printf 'dtoverlay=uart5\n'
+            ;;
+        *)
+            echo "rak-board-detect: unknown board '$1'" >&2
+            return 1
+            ;;
+    esac
+}
+
+# Every overlay line this script can emit, for any board. Used to clean up a
+# hand-edited config.txt: only lines this script owns are ever removed.
+managed_lines() {
+    overlays_for rak7391
+    overlays_for rak7392
+    overlays_for rak7393
+}
+
+render_block() {
+    local board=$1
+    printf '%s\n' "${BEGIN_MARKER}"
+    printf '# Managed by rak-board-detect - put a board name in %s to override.\n' "${OVERRIDE_FILE}"
+    printf '# Keep both markers, and keep them in an [all] section.\n'
+    printf '# Detected carrier board: %s\n' "${board}"
+    overlays_for "${board}"
+    printf '%s\n' "${END_MARKER}"
+}
+
+# Line numbers of a well-formed marker pair, or failure. A lone BEGIN must
+# never be treated as the start of a block: everything below it would be
+# dropped, which on the shipped config.txt means the [cm4]/[cm5] sections.
+marker_pair() {
+    local begin end
+    begin=$( grep -nxF "${BEGIN_MARKER}" "${CONFIG_TXT}" | cut -d: -f1 )
+    end=$( grep -nxF "${END_MARKER}" "${CONFIG_TXT}" | cut -d: -f1 )
+    [ "$( printf '%s' "${begin}" | grep -c . )" = 1 ] || return 1
+    [ "$( printf '%s' "${end}" | grep -c . )" = 1 ] || return 1
+    [ "${end}" -gt "${begin}" ] || return 1
+    printf '%s %s\n' "${begin}" "${end}"
+}
+
+# Replace the marker block in place, rebuilding it if the markers are gone or
+# malformed (hand-edited config.txt).
+write_config() {
+    local board=$1 block work pair begin end
+    block=$( mktemp )
+    work=$( mktemp )
+    render_block "${board}" > "${block}"
+
+    if pair=$( marker_pair ); then
+        begin=${pair% *}
+        end=${pair#* }
+        awk -v b="${begin}" -v e="${end}" -v block="${block}" '
+            NR == b { while ((getline line < block) > 0) print line; close(block) }
+            NR >= b && NR <= e { next }
+            { print }
+        ' "${CONFIG_TXT}" > "${work}"
+    else
+        # Markers gone or malformed. Drop the orphan markers, our own comment
+        # lines and any overlay line we own, so re-appending cannot leave the
+        # same overlay in the file twice. Then append with [all] first, so the
+        # overlays cannot inherit a trailing [cm4]/[cm5] section's scope.
+        { grep -vxF "${BEGIN_MARKER}" "${CONFIG_TXT}" \
+            | grep -vxF "${END_MARKER}" \
+            | grep -vxF -f <( managed_lines ) \
+            | grep -Ev '^# (Managed by rak-board-detect|Keep both markers|Detected carrier board)' \
+            || true ; } > "${work}"
+        printf '\n[all]\n' >> "${work}"
+        cat "${block}" >> "${work}"
+    fi
+
+    if cmp -s "${CONFIG_TXT}" "${work}"; then
+        rm -f "${block}" "${work}"
+        return 1        # nothing changed
+    fi
+
+    cat "${work}" > "${CONFIG_TXT}"     # preserve the original file's mode
+    rm -f "${block}" "${work}"
+    return 0
+}
+
+BOARD=""
+REBOOT=0
+case "${1:-}" in
+    --boot) REBOOT=1 ;;
+    "")     ;;
+    *)      BOARD=$1 ;;
+esac
+
+if [ -z "${BOARD}" ] && [ -r "${OVERRIDE_FILE}" ]; then
+    BOARD=$( tr -d '[:space:]' < "${OVERRIDE_FILE}" )
+    [ -n "${BOARD}" ] && echo "rak-board-detect: using override ${BOARD} from ${OVERRIDE_FILE}"
+fi
+
+[ -n "${BOARD}" ] || BOARD=$( detect_board )
+
+# Reject a bad board name before touching config.txt
+if ! overlays_for "${BOARD}" > /dev/null; then
+    exit 1
+fi
+
+if ! write_config "${BOARD}"; then
+    echo "rak-board-detect: ${BOARD} already configured"
+    exit 0
+fi
+
+echo "rak-board-detect: configured ${BOARD} in ${CONFIG_TXT}"
+[ "${REBOOT}" -eq 1 ] || exit 0
+
+# Only overlays loaded at boot count, so reboot - but never loop forever if
+# detection is somehow unstable.
+mkdir -p "${STATE_DIR}"
+COUNT=0
+[ -r "${STATE_DIR}/reboots" ] && COUNT=$( cat "${STATE_DIR}/reboots" )
+if [ "${COUNT}" -ge "${MAX_REBOOTS}" ]; then
+    echo "rak-board-detect: already rebooted ${COUNT} times, not rebooting again" >&2
+    exit 0
+fi
+printf '%s\n' "$(( COUNT + 1 ))" > "${STATE_DIR}/reboots"
+
+echo "rak-board-detect: rebooting to load the ${BOARD} overlays"
+systemctl reboot

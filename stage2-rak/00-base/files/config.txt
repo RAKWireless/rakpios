@@ -51,8 +51,11 @@ arm_boost=1
 # Enable onboard RTC (this is specific to the RAK7391)
 dtoverlay=i2c-rtc,pcf85063a
 
-# Enable onboard GPIO Expander TPT29555 (compatible with PCA9555,this is specific to the RAK7391)
-dtoverlay=rak7391
+# Board-specific overlays (GPIO expanders on the RAK7391, uart5 for GPS on the
+# RAK7392/RAK7393, ...). All three carriers use a CM4/CM5, so [cm4]/[cm5] cannot
+# tell them apart - rak-board-detect fills this block in on boot instead.
+# BEGIN RAK BOARD
+# END RAK BOARD
 
 # Enable onboard ADS1115 (this is specific to the RAK7391)
 #dtoverlay=ads1115

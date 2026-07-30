@@ -6,7 +6,11 @@
 # Ignore build distribution artifacts
 deploy/*
 work/*
+*-pc
+*.dtbo
 
 # Ignore custom built setting files
+config
+postrun.sh
 SKIP
 SKIP_IMAGES

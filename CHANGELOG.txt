@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Password reset utility
 - Enable A/B bootloader updates on Pi 5 and CM5 (dtoverlay=nospi10)
 
+### Removed
+- Standalone portainer script, Portainer is now deployed from rakpios-cli
+
 ## [0.9.2] - 2025-02-17
 
 ### Changed

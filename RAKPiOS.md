@@ -81,7 +81,7 @@ There are a number of different directories in the `stage2-rak` directory:
   
 - **02-kernel** - Cross-builds a kernel that is tailored to the RAK7391.
   
-- **03-utils** - Installs several scripts and utilities: boot AP, OLED script, portainer, MOTD, and so on.   
+- **03-utils** - Installs several scripts and utilities: boot AP, OLED script, rakpios-cli, MOTD, and so on.   
 
 ## Notice
 
@@ -90,6 +90,14 @@ There are a number of different directories in the `stage2-rak` directory:
 - In the case of WiFi-enabled CM4 modules and Raspberry Pi, the image will automatically create an access point when the device boots and no other connectivity options are enabled. This feature is based on [WiFi-connect](https://github.com/balena-os/wifi-connect) developed by Balena.
   
   This access point, named `RAK_XXXX` (where `XXXX` represents the last four digits of the `eth0` MAC address), enables users to configure an existing connection. The access point is secured with the password `rakwireless`. After connecting to the access point from a mobile phone or laptop, the captive portal will be detected and the web page will automatically open. In the event that the captive portal does not automatically redirect, please browse to `192.168.230.1` to access the captive portal.
+
+- Portainer is no longer shipped as a standalone `portainer` script. It is now one of the services `rakpios-cli` can deploy, together with ChirpStack, Node-RED, Grafana, Mosquitto and others. To bring it up, run:
+
+  ```bash
+  rakpios-cli
+  ```
+
+  and pick *Deploy services* → *Portainer*. The same menu is used to stop and list running services.
 
 ## Branch management
 

@@ -14,8 +14,8 @@ EOF
 # Add reset_password utility
 install -m 755 files/reset_password "${ROOTFS_DIR}/usr/local/bin/"
 
-# Add portainer up script
-#install -m 755 files/portainer "${ROOTFS_DIR}/usr/local/bin/"
+# Add portainer stub redirecting to rakpios-cli
+install -m 755 files/portainer "${ROOTFS_DIR}/usr/local/bin/"
 
 # Add rakpios-cli
 on_chroot << EOF

@@ -2,9 +2,17 @@
 Description=Detect the RAK carrier board and apply its device tree overlays
 Documentation=file:/usr/local/bin/rak-board-detect
 # Needs /dev/i2c-1 (i2c-dev from /etc/modules) and an enumerated PCI bus.
-# cloud-init.target so we never reboot while the first-boot rootfs resize
-# is still running.
-After=systemd-modules-load.service cloud-init.target
+#
+# rpi-resize.service so we never reboot while the first-boot rootfs resize is
+# still running. It is pulled in by sysinit.target, so it has already finished
+# by the time anything in multi-user.target starts - naming it here only makes
+# the requirement explicit should that ever stop being true.
+#
+# Do NOT order against cloud-init.target: it is itself After=multi-user.target,
+# so combined with WantedBy=multi-user.target below it forms an ordering cycle.
+# systemd resolves that by silently deleting this job, and the board is left
+# with no overlays at all.
+After=systemd-modules-load.service rpi-resize.service
 ConditionPathIsReadWrite=/boot/firmware
 
 [Service]

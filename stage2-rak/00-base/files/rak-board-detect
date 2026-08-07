@@ -89,6 +89,14 @@ overlays_for() {
         rak7391)
             # GPIO expanders, with the IO0_x..IO3_x line names (rak7391.dts)
             printf 'dtoverlay=rak7391\n'
+            # Power fault signal on GPIO16, reported as KEY_PROG1 (148) on an
+            # input event device. Only this carrier wires it. Letting the
+            # kernel own the line through gpio-keys keeps it readable by any
+            # number of processes at once; a userspace claim on the GPIO
+            # character device is exclusive, so whoever asked first would lock
+            # everyone else out and the OLED panel and the hardware test suite
+            # could not both watch the pin.
+            printf 'dtoverlay=gpio-key,gpio=16,active_low=1,gpio_pull=up,label=power-fault,keycode=148\n'
             ;;
         rak7392)
             # GPIO7 is WisBlock_RESET here, not spi0 CS1: only CE0 reaches the slot

@@ -1,2 +1,8 @@
 SUBSYSTEMS=="usb", ATTRS{idVendor}=="1a40", ATTRS{idProduct}=="0101", ENV{USB_HUB_TYPE}="fe11s"
-ENV{USB_HUB_TYPE}=="fe11s", SUBSYSTEM=="tty", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="7523", ACTION=="add", SYMLINK+="ttyWB%n"
+
+# ID_MM_DEVICE_IGNORE keeps ModemManager away from these ports. It probes every
+# serial device that appears, holding it open and writing AT commands at it for
+# a few seconds, which corrupts whatever is already talking to a WisBlock. The
+# match is deliberately narrow - the CH340 bridges behind the WisBlock hub are
+# not modems - so a real cellular modem is still detected normally.
+ENV{USB_HUB_TYPE}=="fe11s", SUBSYSTEM=="tty", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="7523", ACTION=="add", SYMLINK+="ttyWB%n", ENV{ID_MM_DEVICE_IGNORE}="1"

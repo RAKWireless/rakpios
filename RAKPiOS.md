@@ -31,7 +31,7 @@ We defined some original configuration tags and also introduced some custom conf
 
 ```
 NAME="RAKPiOS"
-VERSION=0.10.0
+VERSION=1.0.0
 ARCH=arm64
 RELEASE=trixie
 
@@ -104,6 +104,12 @@ There are a number of different directories in the `stage2-rak` directory:
 The main development branch is "arm64". This holds the latest version of RAKPiOS. Stabel releases are tagged on the arm64 branch. 
 
 The repository management strategy is as follows:
+
+### Versioning
+
+The major version tracks the Debian base: every image built on trixie is 1.x, and the first release on the next Debian version becomes 2.0.0. Minor and patch follow semantic versioning within a base.
+
+Tying the major to the base is what keeps the semantic versioning claim honest. A new Debian release always brings changes we do not control and cannot call backwards compatible, so without that rule every upstream bump would either force a major or quietly break the promise.
 
 ### Upstream new releases
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# The portainer script was dropped in RAKPiOS 0.10.0. Portainer is now one of
+# The portainer script was dropped in RAKPiOS 1.0.0. Portainer is now one of
 # the services rakpios-cli can deploy, so all this does is point there - it is
 # kept so that `portainer` does not just fail with "command not found" on
 # images upgraded from earlier releases.

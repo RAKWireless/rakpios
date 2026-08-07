@@ -52,6 +52,19 @@ on_chroot << EOF
 sed -i "s/managed=false/managed=true/g" "/etc/NetworkManager/NetworkManager.conf"
 EOF
 
+# Do not hold the boot open waiting for the network to come all the way up.
+# NetworkManager-wait-online is the only unit ordered before
+# network-online.target, and docker pulls that target into multi-user.target, so
+# the whole boot serialises behind ethernet link negotiation, DHCP and IPv6
+# settling -- around seven seconds on this hardware, most of it the PHY
+# autonegotiating. Nothing here needs a routable address that early: dockerd
+# builds its own bridge and firewall rules, and the cloud-init modules that do
+# want the network are ordered after multi-user.target anyway. Containers that
+# need connectivity at startup have to handle their own retries regardless.
+on_chroot << EOF
+systemctl disable NetworkManager-wait-online.service
+EOF
+
 # Enable Wifi
 on_chroot << EOF
 raspi-config nonint do_wifi_country GB

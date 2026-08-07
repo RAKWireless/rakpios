@@ -130,6 +130,21 @@ if [[ "${binfmt_misc_required}" == "1" ]]; then
   fi
 fi
 
+# export-image needs a loop device. The container gets a tmpfs /dev populated
+# from whatever the host had when the container was created, so on a host that
+# has not used a loop device since boot it starts with none at all. Ask the
+# kernel for one here and wait for the host udev to create the node, so it is
+# part of that snapshot.
+if [ ! -e /dev/loop0 ]; then
+  [ -e /dev/loop-control ] || sudo modprobe loop || true
+  losetup -f >/dev/null 2>&1 || sudo losetup -f >/dev/null 2>&1 || true
+  udevadm settle >/dev/null 2>&1 || true
+  for _ in 1 2 3 4 5; do
+    [ -e /dev/loop0 ] && break
+    sleep 1
+  done
+fi
+
 trap 'echo "got CTRL+C... please wait 5s" && ${DOCKER} stop -t 5 ${DOCKER_CMDLINE_NAME}' SIGINT SIGTERM
 time ${DOCKER} run \
   $DOCKER_CMDLINE_PRE \

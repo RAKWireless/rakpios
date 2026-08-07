@@ -115,8 +115,16 @@ export -f update_issue
 
 ensure_next_loopdev() {
 	local loopdev
+	# The kernel allocates a loop device on demand, but the node under /dev is
+	# created by udev afterwards. Inside the build container there is no udev
+	# and /dev is a tmpfs snapshot of the host's devices taken when the
+	# container was created, so the node never shows up and we have to create
+	# it ourselves. In that situation losetup reports the device as
+	# "/dev/loopN (lost)"; strip the annotation before using the name, or the
+	# minor number parsed out of it is the whole string and mknod refuses it.
 	loopdev="$(losetup -f)"
-	loopmaj="$(echo "$loopdev" | sed -E 's/.*[^0-9]*?([0-9]+)$/\1/')"
+	loopdev="${loopdev%% *}"
+	loopmaj="${loopdev##*[!0-9]}"
 	[[ -b "$loopdev" ]] || mknod "$loopdev" b 7 "$loopmaj"
 }
 export -f ensure_next_loopdev

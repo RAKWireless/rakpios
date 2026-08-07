@@ -14,3 +14,7 @@ config
 postrun.sh
 SKIP
 SKIP_IMAGES
+
+# AI assistant files
+CLAUDE.md
+AGENTS.md

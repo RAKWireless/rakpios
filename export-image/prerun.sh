@@ -13,7 +13,7 @@ BOOT_SIZE="$((512 * 1024 * 1024))"
 ROOT_SIZE=$(du -x --apparent-size -s "${EXPORT_ROOTFS_DIR}" --exclude var/cache/apt/archives --exclude boot/firmware --block-size=1 | cut -f 1)
 
 # All partition sizes and starts will be aligned to this size
-ALIGN="$((4 * 1024 * 1024))"
+ALIGN="$((8 * 1024 * 1024))"
 # Add this much space to the calculated file size. This allows for
 # some overhead (since actual space usage is usually rounded up to the
 # filesystem block size) and gives some free space on the resulting
@@ -73,7 +73,7 @@ else
 	FAT_SIZE=32
 fi
 
-mkdosfs -n bootfs -F "$FAT_SIZE" -s 4 -v "$BOOT_DEV" > /dev/null
+mkdosfs -n bootfs -F "$FAT_SIZE" -s 1 -v "$BOOT_DEV" > /dev/null
 mkfs.ext4 -L rootfs -O "$ROOT_FEATURES" "$ROOT_DEV" > /dev/null
 
 mount -v "$ROOT_DEV" "${ROOTFS_DIR}" -t ext4

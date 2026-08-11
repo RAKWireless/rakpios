@@ -1,17 +1,44 @@
 #!/bin/bash -e
 
+# Cloud-Init for trixie (filesystem expansion on first boot)
+install -v -m 644 files/meta-data "${ROOTFS_DIR}/boot/firmware/meta-data"
+install -v -m 644 files/user-data "${ROOTFS_DIR}/boot/firmware/user-data"
+# network-config intentionally not installed (conflicts with NetworkManager)
+
 # Add custom firstboot script
-install -m 755 files/firstboot-rak "${ROOTFS_DIR}/usr/bin/"
-install -d "${ROOTFS_DIR}/usr/share/firstboot.d/"
-install -m 755 files/firstboot.d/* "${ROOTFS_DIR}/usr/share/firstboot.d/"
-sed -i "s|main$|main\nfirstboot-rak\n|" "${ROOTFS_DIR}/usr/lib/raspberrypi-sys-mods/firstboot"
+#install -m 755 files/firstboot-rak "${ROOTFS_DIR}/usr/bin/"
+#install -d "${ROOTFS_DIR}/usr/share/firstboot.d/"
+#install -m 755 files/firstboot.d/* "${ROOTFS_DIR}/usr/share/firstboot.d/"
+#sed -i "s|main$|main\nfirstboot-rak\n|" "${ROOTFS_DIR}/usr/lib/raspberrypi-sys-mods/firstboot"
+
+# Build overlays
+dtc -I dts -O dtb files/rak7391.dts -o files/rak7391.dtbo
+install -m 755 files/rak7391.dtbo "${ROOTFS_DIR}/boot/firmware/overlays/"
 
 # Update config.txt
 install -m 755 files/config.txt "${ROOTFS_DIR}/boot/firmware/"
 
+# Add carrier board detection (fills in the RAK BOARD block in config.txt)
+install -m 755 files/rak-board-detect "${ROOTFS_DIR}/usr/local/bin/"
+install -m 644 files/rak-board-detect.service "${ROOTFS_DIR}/etc/systemd/system/"
+on_chroot << EOF
+systemctl enable rak-board-detect
+EOF
+
+# Enable SSH
+on_chroot << EOF
+sudo raspi-config nonint do_ssh 0
+EOF
+
 # Enable I2C
 on_chroot << EOF
 echo "i2c-dev" >> /etc/modules
+sudo raspi-config nonint do_i2c 0
+EOF
+
+# Enable SPI
+on_chroot << EOF
+sudo raspi-config nonint do_spi 0
 EOF
 
 # Force user to change password after first login
@@ -23,6 +50,24 @@ EOF
 # Configure Network Manager
 on_chroot << EOF
 sed -i "s/managed=false/managed=true/g" "/etc/NetworkManager/NetworkManager.conf"
+EOF
+
+# Do not hold the boot open waiting for the network to come all the way up.
+# NetworkManager-wait-online is the only unit ordered before
+# network-online.target, and docker pulls that target into multi-user.target, so
+# the whole boot serialises behind ethernet link negotiation, DHCP and IPv6
+# settling -- around seven seconds on this hardware, most of it the PHY
+# autonegotiating. Nothing here needs a routable address that early: dockerd
+# builds its own bridge and firewall rules, and the cloud-init modules that do
+# want the network are ordered after multi-user.target anyway. Containers that
+# need connectivity at startup have to handle their own retries regardless.
+on_chroot << EOF
+systemctl disable NetworkManager-wait-online.service
+EOF
+
+# Enable Wifi
+on_chroot << EOF
+raspi-config nonint do_wifi_country GB
 EOF
 
 # Update os-release file

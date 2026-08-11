@@ -82,7 +82,7 @@ fi
 # Modify original build-options to allow config file to be mounted in the docker container
 BUILD_OPTS="$(echo "${BUILD_OPTS:-}" | sed -E 's@\-c\s?([^ ]+)@-c /config@')"
 
-${DOCKER} build --build-arg BASE_IMAGE=debian:bullseye --load -t pi-gen "${DIR}"
+${DOCKER} build --build-arg BASE_IMAGE=debian:trixie --load -t pi-gen "${DIR}"
 
 if [ "${CONTAINER_EXISTS}" != "" ]; then
   DOCKER_CMDLINE_NAME="${CONTAINER_NAME}_cont"
@@ -105,10 +105,10 @@ case $(uname -m) in
     ;;
 esac
 
-# Check if qemu-aarch64-static and /proc/sys/fs/binfmt_misc are present
+# Check if qemu-aarch64 and /proc/sys/fs/binfmt_misc are present
 if [[ "${binfmt_misc_required}" == "1" ]]; then
-  if ! qemu_arm=$(which qemu-aarch64-static) ; then
-    echo "qemu-aarch64-static not found (please install qemu-user-static)"
+  if ! qemu_arm=$(which qemu-aarch64) ; then
+    echo "qemu-aarch64 not found (please install qemu-user-binfmt)"
     exit 1
   fi
   if [ ! -f /proc/sys/fs/binfmt_misc/register ]; then
@@ -130,6 +130,21 @@ if [[ "${binfmt_misc_required}" == "1" ]]; then
   fi
 fi
 
+# export-image needs a loop device. The container gets a tmpfs /dev populated
+# from whatever the host had when the container was created, so on a host that
+# has not used a loop device since boot it starts with none at all. Ask the
+# kernel for one here and wait for the host udev to create the node, so it is
+# part of that snapshot.
+if [ ! -e /dev/loop0 ]; then
+  [ -e /dev/loop-control ] || sudo modprobe loop || true
+  losetup -f >/dev/null 2>&1 || sudo losetup -f >/dev/null 2>&1 || true
+  udevadm settle >/dev/null 2>&1 || true
+  for _ in 1 2 3 4 5; do
+    [ -e /dev/loop0 ] && break
+    sleep 1
+  done
+fi
+
 trap 'echo "got CTRL+C... please wait 5s" && ${DOCKER} stop -t 5 ${DOCKER_CMDLINE_NAME}' SIGINT SIGTERM
 time ${DOCKER} run \
   $DOCKER_CMDLINE_PRE \
@@ -141,8 +156,8 @@ time ${DOCKER} run \
   $DOCKER_CMDLINE_POST \
   pi-gen \
   bash -e -o pipefail -c "
-    dpkg-reconfigure qemu-user-static &&
-    # binfmt_misc is sometimes not mounted with debian bullseye image
+    dpkg-reconfigure qemu-user-binfmt &&
+    # binfmt_misc is sometimes not mounted with debian trixie image
     (mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc || true) &&
     cd /pi-gen; ./build.sh ${BUILD_OPTS} &&
     rsync -av work/*/build.log deploy/

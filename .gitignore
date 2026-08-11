@@ -1,8 +1,20 @@
+# Ignore all dotfiles except for .gitignore and .dockerignore
+.*
+!.gitignore
+!.dockerignore
+
+# Ignore build distribution artifacts
 deploy/*
 work/*
+*-pc
+*.dtbo
+
+# Ignore custom built setting files
 config
 postrun.sh
 SKIP
 SKIP_IMAGES
-.pc
-*-pc
+
+# AI assistant files
+CLAUDE.md
+AGENTS.md

@@ -6,6 +6,9 @@ which was in turn derived from the Raspbian project.
 **Note**: Raspberry Pi OS 32 bit images are based primarily on Raspbian, while
 Raspberry Pi OS 64 bit images are based primarily on Debian.
 
+**Note**: 32 bit images should be built from the `master` branch.
+64 bit images should be built from the `arm64` branch.
+
 **Note**: Read [RAKPiOS.md](RAKPiOS.md) for specific information and build instructions for this fork.
 
 ## Dependencies
@@ -19,9 +22,9 @@ below.
 To install the required dependencies for `pi-gen` you should run:
 
 ```bash
-apt-get install coreutils quilt parted qemu-user-static debootstrap zerofree zip \
-dosfstools libarchive-tools libcap2-bin grep rsync xz-utils file git curl bc \
-gpg pigz xxd arch-test
+apt install coreutils quilt parted qemu-user-binfmt debootstrap zerofree zip \
+dosfstools e2fsprogs libarchive-tools libcap2-bin grep rsync xz-utils file git curl bc \
+gpg pigz xxd arch-test bmap-tools kmod
 ```
 
 The file `depends` contains a list of tools needed.  The format of this
@@ -36,7 +39,7 @@ can do so with:
 git clone https://github.com/RPI-Distro/pi-gen.git
 ```
 
-`--depth 1` can be added afer `git clone` to create a shallow clone, only containing
+`--depth 1` can be added after `git clone` to create a shallow clone, only containing
 the latest revision of the repository. Do not do this on your development machine.
 
 Also, be careful to clone the repository to a base path **NOT** containing spaces.
@@ -54,7 +57,7 @@ environment variables.
 
 The following environment variables are supported:
 
- * `IMG_NAME` (Default: `raspios-$RELEASE-$ARCH`, for example: `raspios-bookworm-armhf`)
+ * `IMG_NAME` (Default: `raspios-$RELEASE-$ARCH`, for example: `raspios-trixie-armhf`)
 
    The name of the image to build with the current stage directories. Use this
    variable to set the root name of your OS, eg `IMG_NAME=Frobulator`.
@@ -65,7 +68,7 @@ The following environment variables are supported:
    The release name to use in `/etc/issue.txt`. The default should only be used
    for official Raspberry Pi builds.
 
-* `RELEASE` (Default: `bookworm`)
+* `RELEASE` (Default: `trixie`)
 
    The release version to build images against. Valid values are any supported
    Debian release. However, since different releases will have different sets of
@@ -78,6 +81,13 @@ The following environment variables are supported:
    If you require the use of an apt proxy, set it here.  This proxy setting
    will not be included in the image, making it safe to use an `apt-cacher` or
    similar package for development.
+
+ * `TEMP_REPO` (Default: unset)
+
+   An additional temporary apt repo to be used during the build process. This
+   could be useful if you require pre-release software to be included in the
+   image. The variable should contain sources in [one-line-style format](https://manpages.debian.org/stable/apt/sources.list.5.en.html#ONE-LINE-STYLE_FORMAT).
+   "RELEASE" will be replaced with the RELEASE variable.
 
  * `BASE_DIR`  (Default: location of `build.sh`)
 
@@ -154,7 +164,7 @@ The following environment variables are supported:
 
  * `TIMEZONE_DEFAULT` (Default: 'Europe/London' )
 
-   Default keyboard layout.
+   Default time zone.
 
    To get the current value from a running system, look in
    `/etc/timezone`.
@@ -166,6 +176,8 @@ The following environment variables are supported:
    a name chosen by the final user. This security feature is designed to prevent shipping images
    with a default username and help prevent malicious actors from taking over your devices.
 
+   If the FIRST_USER_NAME is set to `pi` and no `FIRST_USER_PASS` is set, the setup wizard will be launched on first boot to allow the user to set the password.
+
  * `FIRST_USER_PASS` (Default: unset)
 
    Password for the first user. If unset, the account is locked.
@@ -175,6 +187,14 @@ The following environment variables are supported:
    Disable the renaming of the first user during the first boot. This make it so `FIRST_USER_NAME`
    stays activated. `FIRST_USER_PASS` must be set for this to work. Please be aware of the implied
    security risk of defining a default username and password for your devices.
+
+ * `PASSWORDLESS_SUDO` (Default: `0`)
+
+   Setting to `1` will enable passwordless sudo for the first user. This allows
+   the user to run commands with sudo without entering a password. Note that
+   this is a security risk and should only be enabled if you understand the
+   implications. The user will still be able to use sudo with a password even
+   when this is set to `0`.
 
  * `WPA_COUNTRY` (Default: unset)
 
@@ -207,6 +227,14 @@ The following environment variables are supported:
 
     If set, then instead of working through the numeric stages in order, this list will be followed. For example setting to `"stage0 stage1 mystage stage2"` will run the contents of `mystage` before stage2. Note that quotes are needed around the list. An absolute or relative path can be given for stages outside the pi-gen directory.
 
+ * `EXPORT_CONFIG_DIR` (Default: `$BASE_DIR/export-image`)
+
+    If set, use this directory path as the location of scripts to run when generating images. An absolute or relative path can be given for a location outside the pi-gen directory.
+
+ * `ENABLE_CLOUD_INIT` (Default: `1`)
+
+    If set to `1`, cloud-init and netplan will be installed and configured. This will allow you to configure your Raspberry Pi using cloud-init configuration files. The cloud-init configuration files should be placed in the bootfs or by editing the files in `stage2/04-cloud-init/files`. Cloud-init will be configured to read them on first boot.
+
 A simple example for building Raspberry Pi OS:
 
 ```bash
@@ -225,12 +253,12 @@ This is parsed after `config` so can be used to override values set there.
 
 The following process is followed to build images:
 
- * Interate through all of the stage directories in alphanumeric order
+ * Iterate through all of the stage directories in alphanumeric order
 
  * Bypass a stage directory if it contains a file called
    "SKIP"
 
- * Run the script ```prerun.sh``` which is generally just used to copy the build
+ * Run the script `prerun.sh` which is generally just used to copy the build
    directory between stages.
 
  * In each stage directory iterate through each subdirectory and then run each of the
@@ -251,7 +279,7 @@ The following process is followed to build images:
        separated, per line.
 
      - **00-packages-nr** - As 00-packages, except these will be installed using
-       the ```--no-install-recommends -y``` parameters to apt-get.
+       the `--no-install-recommends -y` parameters to apt-get.
 
      - **00-patches** - A directory containing patch files to be applied, using quilt.
        If a file named 'EDIT' is present in the directory, the build process will
@@ -394,16 +422,14 @@ follows:
  * Run build.sh to build all stages
  * Add SKIP files to the earlier successfully built stages
  * Modify the last stage
- * Rebuild just the last stage using ```sudo CLEAN=1 ./build.sh```
+ * Rebuild just the last stage using `sudo CLEAN=1 ./build.sh` (or, for docker builds
+   `PRESERVE_CONTAINER=1 CONTINUE=1 CLEAN=1 ./build-docker.sh`)
  * Once you're happy with the image you can remove the SKIP_IMAGES files and
    export your image to test
 
 # Troubleshooting
 
 ## `64 Bit Systems`
-Please note there is currently an issue when compiling with a 64 Bit OS. See
-https://github.com/RPi-Distro/pi-gen/issues/271
-
 A 64 bit image can be generated from the `arm64` branch in this repository. Just
 replace the command from [this section](#getting-started-with-building-your-images)
 by the one below, and follow the rest of the documentation:
@@ -420,7 +446,7 @@ work from a Raspberry Pi with a 64-bit capable processor (i.e. Raspberry Pi Zero
 
 ## `binfmt_misc`
 
-Linux is able execute binaries from other architectures, meaning that it should be
+Linux is able to execute binaries from other architectures, meaning that it should be
 possible to make use of `pi-gen` on an x86_64 system, even though it will be running
 ARM binaries. This requires support from the [`binfmt_misc`](https://en.wikipedia.org/wiki/Binfmt_misc)
 kernel module.

@@ -8,8 +8,13 @@ curl
 gnupg
 vim
 git
-figlet
 i2c-tools
 jq
 systemd-timesyncd
-tmux
+
+# Keep ModemManager, where upstream drops it in stage2. The RAK carriers take
+# cellular modems, NetworkManager cannot bring one up without it, and the wwan0
+# raw IP dispatcher hook never fires either. Asking for it by name rather than
+# leaning on network-manager's recommendation means it survives whatever
+# upstream does to that stage next.
+modemmanager

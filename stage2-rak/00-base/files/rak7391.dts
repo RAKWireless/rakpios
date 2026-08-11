@@ -1,0 +1,80 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+	
+    compatible = "brcm,bcm2835";
+
+    /* PCA9555 GPIO expander, address 0x27 */
+    fragment@0 {
+        target = <&i2c1>;
+        __overlay__ {
+            #address-cells = <1>;
+            #size-cells = <0>;
+            status = "okay";
+
+            gpioexp1: pca@27 {
+                compatible = "nxp,pca9555";
+                reg = <0x27>;
+                gpio-controller;
+                #gpio-cells = <2>;
+                gpio-line-names = 
+                    "IO0_0",
+                    "IO0_1",
+                    "IO0_2",
+                    "IO0_3",
+                    "IO0_4",
+                    "IO0_5",
+                    "IO0_6",
+                    "IO0_7",
+                    "IO1_0",
+                    "IO1_1",
+                    "IO1_2",
+                    "IO1_3",
+                    "IO1_4",
+                    "IO1_5",
+                    "IO1_6",
+                    "IO1_7"
+                    ;
+                status = "okay";
+            };
+        };
+    };
+
+    /* PCA9555 GPIO expander, address 0x26 */
+    fragment@1 {
+        target = <&i2c1>;
+        __overlay__ {
+            #address-cells = <1>;
+            #size-cells = <0>;
+            status = "okay";
+
+            gpioexp2: pca@26 {
+                compatible = "nxp,pca9555";
+                reg = <0x26>;
+                gpio-controller;
+                #gpio-cells = <2>;
+                gpio-line-names = 
+                    "IO2_0",
+                    "IO2_1",
+                    "IO2_2",
+                    "IO2_3",
+                    "IO2_4",
+                    "IO2_5",
+                    "IO2_6",
+                    "IO2_7",
+                    "IO3_0",
+                    "IO3_1",
+                    "IO3_2",
+                    "IO3_3",
+                    "IO3_4",
+                    "IO3_5",
+                    "IO3_6",
+                    "IO3_7"
+                    ;
+                status = "okay";
+            };
+        };
+    };
+
+};

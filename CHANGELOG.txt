@@ -4,6 +4,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-08-07
+
+### Changed
+- Based on upstream 2026-06-18-raspios-trixie-arm64 with default 6.12 kernel
+- Up to date mioty utility with dependencies
+- Refactor config.txt for compatibility
+- Build now requires qemu-user-binfmt instead of qemu-user-static (upstream change)
+- OLED info panel updated to 3.0.0
+
+### Added
+- Custom overlay for RAK7391 with pin name definitions
+- Hardware test suite
+- Password reset utility
+- Enable A/B bootloader updates on Pi 5 and CM5 (dtoverlay=nospi10)
+- On the RAK7391, the GPIO16 power fault signal is now bound to gpio-keys and
+  reported as KEY_PROG1 on an input event device. The kernel owns the line, so
+  the OLED panel and the hardware test suite can both watch it - a userspace
+  claim on the GPIO character device is exclusive and locked one of them out
+
+### Fixed
+- Image builds no longer fail in export-image on hosts with no loop device
+  nodes yet, which usually meant the very first build after a reboot
+
+### Removed
+- Standalone portainer script, the portainer command now points to rakpios-cli
+
+## [0.9.2] - 2025-02-17
+
+### Changed
+- Update mioty utility
+
 ## [0.9.1] - 2024-10-28
 
 ### Added

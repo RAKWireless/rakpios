@@ -4,20 +4,19 @@ services:
     container_name: meshmonitor
     ports:
       - "8080:3001"
+      - "1883:1883"
     restart: unless-stopped
     volumes:
       - meshmonitor-data:/data
-    extra_hosts:
-      # Lets the container reach meshtasticd on the host (port 4403).
-      # Do NOT use 127.0.0.1 here — inside Docker that points to the container itself.
-      - "host.docker.internal:host-gateway"
+    # Created by setup.sh. On a new volume, these values create the first TCP
+    # source automatically. In MQTT mode, the file intentionally has no TCP
+    # source values.
+    env_file:
+      - ./meshmonitor.env
     environment:
-      - MESHTASTIC_NODE_IP=host.docker.internal
-      - MESHTASTIC_TCP_PORT=4403
       # CORS allowed origins — * permits any origin for debugging only.
-      # Change to your actual domain(s) (e.g. http://192.168.1.10:8080) before production use.
+      # Change to your actual domain(s) (e.g. http://192.168.1.10:8081) before production use.
       - ALLOWED_ORIGINS=*
-      
 
 volumes:
   meshmonitor-data:

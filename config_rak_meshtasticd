@@ -1,5 +1,5 @@
 NAME="RAKPiOS"
-VERSION=0.9.3-meshtasticd-2.7.26
+VERSION=0.9.3-meshtasticd-2.8.2
 ARCH=arm64
 RELEASE=bookworm
 

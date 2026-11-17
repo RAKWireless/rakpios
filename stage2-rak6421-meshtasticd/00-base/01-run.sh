@@ -37,8 +37,17 @@ echo 'deb http://download.opensuse.org/repositories/network:/Meshtastic:/alpha/D
 curl -fsSL https://download.opensuse.org/repositories/network:Meshtastic:alpha/Debian_12/Release.key | gpg --dearmor > /etc/apt/trusted.gpg.d/network_Meshtastic_alpha.gpg
 
 
-apt-get update
-apt-get install -y meshtasticd
+apt-get -o Acquire::Retries=5 update
+n=0
+until apt-get -o Acquire::Retries=5 install -y 'meshtasticd=2.8.2.66~obsd5f1619~alpha'; do
+	n=$((n + 1))
+	if [ "$n" -ge 5 ]; then
+		exit 1
+	fi
+	echo "meshtasticd install failed, retry ${n}/5"
+	sleep 15
+	apt-get -o Acquire::Retries=5 update
+done
 
 rm -f /usr/sbin/policy-rc.d
 EOF

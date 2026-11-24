@@ -1,0 +1,3 @@
+# Automatic updates are on by default. This is also the package's own default;
+# it is set here so the image doesn't depend on that default staying the same.
+unattended-upgrades unattended-upgrades/enable_auto_updates boolean true

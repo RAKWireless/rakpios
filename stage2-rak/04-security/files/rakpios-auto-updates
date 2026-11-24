@@ -1,0 +1,84 @@
+#!/bin/bash
+#
+# rakpios-auto-updates on|off|status
+#
+# Turns RAKPiOS's automatic updates on or off, or says whether they are on.
+# The updates are Debian's unattended-upgrades. Which updates it installs, and
+# that it never reboots, is set in /etc/apt/apt.conf.d/52rakpios-unattended-upgrades.
+#
+# `status` prints exactly "on" or "off" and needs no root; the rakpios-cli
+# "Automatic updates" menu reads that output. `on` and `off` need root, and
+# fail unless the setting really changed.
+
+set -euo pipefail
+
+CONF=/etc/apt/apt.conf.d/20auto-upgrades
+TEMPLATES=/usr/share/unattended-upgrades
+
+usage() {
+    echo "usage: rakpios-auto-updates on|off|status" >&2
+    exit 2
+}
+
+state() {
+    local value=""
+    eval "$(apt-config shell value APT::Periodic::Unattended-Upgrade)"
+    # apt reads the value as a number of days; anything other than 0 is on
+    if [ -n "${value}" ] && [ "${value}" != "0" ]; then
+        echo "on"
+    else
+        echo "off"
+    fi
+}
+
+set_state() {
+    local want="$1" answer template log
+
+    if [ "$(id -u)" -ne 0 ]; then
+        echo "rakpios-auto-updates: turning automatic updates ${want} needs root: sudo rakpios-auto-updates ${want}" >&2
+        exit 1
+    fi
+
+    if [ "${want}" = "on" ]; then
+        answer=true
+        template="${TEMPLATES}/20auto-upgrades"
+    else
+        answer=false
+        template="${TEMPLATES}/20auto-upgrades-disabled"
+    fi
+    if [ ! -f "${template}" ]; then
+        echo "rakpios-auto-updates: ${template} is missing; is unattended-upgrades installed?" >&2
+        exit 1
+    fi
+
+    # The package's config script reads 20auto-upgrades and resets the debconf
+    # answer from it, so changing the answer and reconfiguring gets undone by
+    # the file. Write the package's own file for the wanted state first. The
+    # reconfigure then brings debconf and ucf's record in line with it, and
+    # later upgrades of unattended-upgrades keep the choice.
+    echo "unattended-upgrades unattended-upgrades/enable_auto_updates boolean ${answer}" | debconf-set-selections
+    install -m 644 "${template}" "${CONF}"
+    if ! log=$(DEBIAN_FRONTEND=noninteractive dpkg-reconfigure -f noninteractive unattended-upgrades 2>&1); then
+        echo "${log}" >&2
+        echo "rakpios-auto-updates: dpkg-reconfigure unattended-upgrades failed" >&2
+        exit 1
+    fi
+
+    if [ "$(state)" != "${want}" ]; then
+        echo "rakpios-auto-updates: asked for ${want}, but automatic updates are $(state)" >&2
+        exit 1
+    fi
+    echo "Automatic updates are ${want}."
+}
+
+case "${1:-}" in
+    status)
+        state
+        ;;
+    on|off)
+        set_state "$1"
+        ;;
+    *)
+        usage
+        ;;
+esac

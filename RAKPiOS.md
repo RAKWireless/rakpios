@@ -31,7 +31,7 @@ We defined some original configuration tags and also introduced some custom conf
 
 ```
 NAME="RAKPiOS"
-VERSION=1.0.0
+VERSION=1.1.0
 ARCH=arm64
 RELEASE=trixie
 

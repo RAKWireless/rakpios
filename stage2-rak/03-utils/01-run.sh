@@ -4,10 +4,18 @@
 install -m 755 files/wwan0.sh "${ROOTFS_DIR}/etc/NetworkManager/dispatcher.d/pre-up.d/"
 
 # Add oled script
+# From 3.1.0 on, the intro page reads the image release from IMAGE_VERSION.
+# An older binary reads VERSION_ID and would show the Debian major ("13"), so
+# check that the release asset really is the version asked for.
+OLED_VERSION=3.1.0
 install -m 644 files/oled.service "${ROOTFS_DIR}/etc/systemd/system/"
 on_chroot << EOF
-curl -fL -o /usr/local/bin/oled https://github.com/xoseperez/rak7391-oled-c/releases/download/v3.0.0/oled-arm64-static
+curl -fL -o /usr/local/bin/oled https://github.com/xoseperez/rak7391-oled-c/releases/download/v${OLED_VERSION}/oled-arm64-static
 chmod +x /usr/local/bin/oled
+if ! /usr/local/bin/oled --version | grep -qx "RAK7391 OLED Status Display v${OLED_VERSION}"; then
+    echo "oled: the v${OLED_VERSION} release asset reports a different version" >&2
+    exit 1
+fi
 systemctl enable oled
 EOF
 

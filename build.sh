@@ -261,6 +261,10 @@ export VERSION
 export ARCH=${ARCH:-"arm64"}
 export KERNEL_STRATEGY=${KERNEL_STRATEGY:-"default"}
 export KERNEL_TAG
+# Commit date of the source, recorded in os-release. build-docker.sh passes it
+# in, because git log can't run inside the container; a native build reads it
+# here. If neither works it stays empty, and the os-release check fails the build.
+export GIT_COMMIT_DATE=${GIT_COMMIT_DATE:-"$(git log -1 --format=%cs 2>/dev/null)"}
 
 if [ "$SETFCAP" != "1" ]; then
 	export CAPSH_ARG="--drop=cap_setfcap"

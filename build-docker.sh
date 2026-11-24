@@ -65,6 +65,9 @@ fi
 
 # Ensure the Git Hash is recorded before entering the docker container
 GIT_HASH=${GIT_HASH:-"$(git rev-parse HEAD)"}
+# The same goes for the commit date that os-release records: .dockerignore
+# leaves .git/objects out of the container, so git log can't run in there.
+GIT_COMMIT_DATE=${GIT_COMMIT_DATE:-"$(git log -1 --format=%cs)"}
 
 CONTAINER_EXISTS=$(${DOCKER} ps -a --filter name="${CONTAINER_NAME}" -q)
 CONTAINER_RUNNING=$(${DOCKER} ps --filter name="${CONTAINER_NAME}" -q)
@@ -119,6 +122,7 @@ time ${DOCKER} run \
   ${PIGEN_DOCKER_OPTS} \
   --volume "${CONFIG_FILE}":/config:ro \
   -e "GIT_HASH=${GIT_HASH}" \
+  -e "GIT_COMMIT_DATE=${GIT_COMMIT_DATE}" \
   $DOCKER_CMDLINE_POST \
   pi-gen \
   bash -e -o pipefail -c "

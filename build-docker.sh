@@ -82,7 +82,9 @@ fi
 # Modify original build-options to allow config file to be mounted in the docker container
 BUILD_OPTS="$(echo "${BUILD_OPTS:-}" | sed -E 's@\-c\s?([^ ]+)@-c /config@')"
 
-${DOCKER} build --build-arg BASE_IMAGE=debian:trixie --load -t pi-gen "${DIR}"
+# --load: when the active buildx builder uses the docker-container driver, the
+# image otherwise stays in the build cache and the `run` below can't find it.
+${DOCKER} build --build-arg BASE_IMAGE=docker.io/debian:trixie --load -t pi-gen "${DIR}"
 
 if [ "${CONTAINER_EXISTS}" != "" ]; then
   DOCKER_CMDLINE_NAME="${CONTAINER_NAME}_cont"
@@ -92,42 +94,6 @@ else
   DOCKER_CMDLINE_NAME="${CONTAINER_NAME}"
   DOCKER_CMDLINE_PRE=""
   DOCKER_CMDLINE_POST=""
-fi
-
-# Check if binfmt_misc is required
-binfmt_misc_required=1
-case $(uname -m) in
-  aarch64)
-    binfmt_misc_required=0
-    ;;
-  arm*)
-    binfmt_misc_required=0
-    ;;
-esac
-
-# Check if qemu-aarch64 and /proc/sys/fs/binfmt_misc are present
-if [[ "${binfmt_misc_required}" == "1" ]]; then
-  if ! qemu_arm=$(which qemu-aarch64) ; then
-    echo "qemu-aarch64 not found (please install qemu-user-binfmt)"
-    exit 1
-  fi
-  if [ ! -f /proc/sys/fs/binfmt_misc/register ]; then
-    echo "binfmt_misc required but not mounted, trying to mount it..."
-    if ! mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc ; then
-        echo "mounting binfmt_misc failed"
-        exit 1
-    fi
-    echo "binfmt_misc mounted"
-  fi
-  if ! grep -q "^interpreter ${qemu_arm}" /proc/sys/fs/binfmt_misc/qemu-aarch64* ; then
-    # Register qemu-aarch64 for binfmt_misc
-    reg="echo ':qemu-aarch64-rpi:M::"\
-"\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7\x00:"\
-"\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:"\
-"${qemu_arm}:F' > /proc/sys/fs/binfmt_misc/register"
-    echo "Registering qemu-aarch64 for binfmt_misc..."
-    sudo bash -c "${reg}" 2>/dev/null || true
-  fi
 fi
 
 # export-image needs a loop device. The container gets a tmpfs /dev populated
@@ -156,10 +122,20 @@ time ${DOCKER} run \
   $DOCKER_CMDLINE_POST \
   pi-gen \
   bash -e -o pipefail -c "
-    dpkg-reconfigure qemu-user-binfmt &&
-    # binfmt_misc is sometimes not mounted with debian trixie image
-    (mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc || true) &&
-    cd /pi-gen; ./build.sh ${BUILD_OPTS} &&
+    mount -t binfmt_misc binfmt_misc /proc/sys/fs/binfmt_misc || true
+    # Use the host's arm64 registration if it works in here; otherwise register
+    # the image's own (static) qemu-aarch64 for the duration of the build, replacing
+    # any stale entry of ours. The newest entry is the one the kernel matches.
+    # Probe inside an empty chroot: a host entry without the F flag resolves its
+    # interpreter in the caller's filesystem, so it works in the container root
+    # but fails in every chroot the build makes.
+    if ! arch-test -c \"\$(mktemp -d)\" arm64; then
+      [ ! -e /proc/sys/fs/binfmt_misc/qemu-aarch64-rpi ] || echo -1 > /proc/sys/fs/binfmt_misc/qemu-aarch64-rpi
+      echo ':qemu-aarch64-rpi:M::\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:/usr/bin/qemu-aarch64:F' > /proc/sys/fs/binfmt_misc/register
+      trap 'echo -1 > /proc/sys/fs/binfmt_misc/qemu-aarch64-rpi' EXIT
+    fi
+    cd /pi-gen
+    ./build.sh ${BUILD_OPTS}
     rsync -av work/*/build.log deploy/
   " &
   wait "$!"
@@ -171,9 +147,9 @@ ${DOCKER} cp "${CONTAINER_NAME}":/pi-gen/deploy - | tar -xf -
 echo "copying log from container ${CONTAINER_NAME} to deploy/"
 ${DOCKER} logs --timestamps "${CONTAINER_NAME}" &>deploy/build-docker.log
 
-echo "copying kernel from container ${CONTAINER_NAME} to depoy/"
-${DOCKER} cp -q ${CONTAINER_NAME}:/pi-gen/stage2-rak/02-kernel/files/cm4.arm64.kernel.zip deploy/
-${DOCKER} cp -q ${CONTAINER_NAME}:/pi-gen/stage2-rak/02-kernel/files/rpi5.arm64.kernel.zip deploy/
+echo "copying kernel from container ${CONTAINER_NAME} to deploy/"
+${DOCKER} cp -q "${CONTAINER_NAME}":/pi-gen/stage2-rak/02-kernel/files/cm4.arm64.kernel.zip deploy/
+${DOCKER} cp -q "${CONTAINER_NAME}":/pi-gen/stage2-rak/02-kernel/files/rpi5.arm64.kernel.zip deploy/
 
 ls -lah deploy
 

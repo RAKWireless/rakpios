@@ -32,27 +32,16 @@ parted --script "${IMG_FILE}" mklabel msdos
 parted --script "${IMG_FILE}" unit B mkpart primary fat32 "${BOOT_PART_START}" "$((BOOT_PART_START + BOOT_PART_SIZE - 1))"
 parted --script "${IMG_FILE}" unit B mkpart primary ext4 "${ROOT_PART_START}" "$((ROOT_PART_START + ROOT_PART_SIZE - 1))"
 
-	echo "Creating loop device..."
-	cnt=0
-	until ensure_next_loopdev && LOOP_DEV="$(losetup --show --find --partscan "$IMG_FILE")"; do
-		if [ $cnt -lt 5 ]; then
-			cnt=$((cnt + 1))
-			echo "Error in losetup.  Retrying..."
-			sleep 5
-		else
-			echo "ERROR: losetup failed; exiting"
-			exit 1
-		fi
-	done
-
-	ensure_loopdev_partitions "$LOOP_DEV"
-	BOOT_DEV="${LOOP_DEV}p1"
-	ROOT_DEV="${LOOP_DEV}p2"
-
-	ROOT_FEATURES="^huge_file"
-	for FEATURE in 64bit; do
-	if grep -q "$FEATURE" /etc/mke2fs.conf; then
-		ROOT_FEATURES="^$FEATURE,$ROOT_FEATURES"
+echo "Creating loop device..."
+cnt=0
+until ensure_next_loopdev && LOOP_DEV="$(losetup --show --find --partscan "$IMG_FILE")"; do
+	if [ $cnt -lt 5 ]; then
+		cnt=$((cnt + 1))
+		echo "Error in losetup.  Retrying..."
+		sleep 5
+	else
+		echo "ERROR: losetup failed; exiting"
+		exit 1
 	fi
 done
 
@@ -61,24 +50,45 @@ BOOT_DEV="${LOOP_DEV}p1"
 ROOT_DEV="${LOOP_DEV}p2"
 
 ROOT_FEATURES="^huge_file"
-for FEATURE in 64bit; do
-if grep -q "$FEATURE" /etc/mke2fs.conf; then
-	ROOT_FEATURES="^$FEATURE,$ROOT_FEATURES"
-fi
+# 64bit is disabled for compatibility with SD card copiers and other tools
+# that may use an older e2fsprogs. Only disable features this mke2fs knows.
+DISABLE_FEATURES=(64bit)
+for FEATURE in "${DISABLE_FEATURES[@]}"; do
+	if grep -q "$FEATURE" /etc/mke2fs.conf; then
+		ROOT_FEATURES="^$FEATURE,$ROOT_FEATURES"
+	fi
 done
 
-if [ "$BOOT_SIZE" -lt 134742016 ]; then
+if [ "$BOOT_PART_SIZE" -lt 134742016 ]; then
 	FAT_SIZE=16
 else
 	FAT_SIZE=32
 fi
 
-mkdosfs -n bootfs -F "$FAT_SIZE" -s 1 -v "$BOOT_DEV" > /dev/null
-mkfs.ext4 -L rootfs -O "$ROOT_FEATURES" "$ROOT_DEV" > /dev/null
+# FAT16 is limited to 65524 clusters, so 512 byte clusters only fit up to
+# ~32MB. Let mkdosfs pick the cluster size for anything larger.
+if [ "$FAT_SIZE" = 32 ] || [ "$BOOT_PART_SIZE" -lt $((65524 * 512)) ]; then
+	CLUSTER_OPTS=(-s 1)
+else
+	CLUSTER_OPTS=()
+fi
+
+mkdosfs -n bootfs -F "$FAT_SIZE" "${CLUSTER_OPTS[@]}" -v "$BOOT_DEV" > /dev/null
+
+STAGING="${STAGE_WORK_DIR}/export-root-staging"
+rm -rf "${STAGING}"
+cp -alx "${EXPORT_ROOTFS_DIR}" "${STAGING}"
+if [ -d "${STAGING}/boot/firmware" ]; then
+	find "${STAGING}/boot/firmware" -mindepth 1 -delete
+fi
+if [ -d "${STAGING}/var/cache/apt/archives" ]; then
+	find "${STAGING}/var/cache/apt/archives" -mindepth 1 -delete
+fi
+mke2fs -q -t ext4 -L rootfs -O "$ROOT_FEATURES" -d "${STAGING}" "$ROOT_DEV" > /dev/null
+rm -rf "${STAGING}"
 
 mount -v "$ROOT_DEV" "${ROOTFS_DIR}" -t ext4
 mkdir -p "${ROOTFS_DIR}/boot/firmware"
 mount -v "$BOOT_DEV" "${ROOTFS_DIR}/boot/firmware" -t vfat
 
-rsync -aHAXx --exclude /var/cache/apt/archives --exclude /boot/firmware "${EXPORT_ROOTFS_DIR}/" "${ROOTFS_DIR}/"
 rsync -rtx "${EXPORT_ROOTFS_DIR}/boot/firmware/" "${ROOTFS_DIR}/boot/firmware/"

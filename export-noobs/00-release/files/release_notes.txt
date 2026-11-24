@@ -1,4 +1,66 @@
 UNRELEASED:
+  * Added tooltips to indicate function of widgets in Widget panel in Control Centre
+  * In menu plugin, only reloaded menu on cache update, rather than before opening
+  * Old source for standalone control panel applications removed
+  * Raspberry Pi menu icons replaced with better quality versions
+  * Inactive window titlebar colour changed to match window backgrounds
+  * Control Centre debug code added to show plugin loading at command line
+  * Shutdown options no longer offers a screen lock button, but instead shows reminder of keyboard shortcut
+  * Added battery and squeekboard widgets to default dock configuration
+  * Switching between taskbar and dock no longer resets all system appearance defaults
+  * Some Japanese translations updated
+  * Added support for automounting encrypted drives in ejecter plugin
+  * Added hook to update list of shortcuts in Shortcuts panel of Control Centre when defaults reloaded
+  * Screens panel now applies system file changes immediately on confirmation, not when closed
+  * Setting taskbar and dock size and location in Control Centre now sets desktop top and bottom margins appropriately
+  * Bug fix - local pcmanfm automount config setting was overriding global setting and allowing pcmanfm to automount at the same time as ejecter plugin
+  * Bug fix - crash in icon menu when text search used
+  * Bug fix - right-click to open terminal in pcmanfm was failing, again caused by local vs. global config conflict
+  * Bug fix - swaybg desktop wallpaper files not loading if space in filename
+  * Bug fix - keyboard activation of top-level menu item did not close menu
+  * Bug fix - LibreOffice icons in launchbar sticking after close, caused by on-the-fly application ID change
+  * Bug fix - possible segfaults on various Control Centre panel initialisation functions
+  * Bug fix - in Japanese locale, window count digits not shown correctly on new task list
+  * Bug fix - panel menus displaying off-screen due to squeekboard hiding
+  * Bug fix - application pop-up menu text in new window list could contain literal markup
+  * Bug fix - dropping files onto list views in file manager failed
+  * Bug fix - icon menu category view crash when non-predefined categories or Other were used
+  * Bug fix - system tray icons all being hidden when one was closed
+  * Bug fix - some system tray icons not displaying correctly on scaled screens
+  * Bug fix - hotplug crash in panel when no monitors were detected and pointer was hidden
+  * Bug fix - crash when updating notification before it is displayed
+  * Bug fix - some panel popup windows drawing partially off-screen
+  * Bug fix - rename window opening when mouse forward and back buttons clicked in file manager list view
+  * Bug fix - GTK4 colour representation manager reporting error
+  * Bug fix - child menus pushed to right of parents were incorrectly spaced
+  * Bug fix - menu shortcut keys could open incorrect menu when mouse pointer not inside application window
+  * Raspberry Pi firmware 6f0881cba8bea8ec24956a5718714730e9936ec5
+  * Linux kernel 6.18.50 - cff533aec2fa601846766b32ff57204e0a61bed7
+2026-09-15:
+  * Support for dock added to wf-panel-pi
+  * New icon menu and icon tasklist plugins for wf-panel-pi added
+  * Analogue display option added to clock plugin
+  * Dock panel added to Control Centre to configure display of dock
+  * Widgets panel added to Control Centre to enable configuration of dock and taskbar replacing dialog within wf-panel-pi itself
+  * Notifications panel added to Control Centre replacing dialog within wf-panel-pi itself
+  * Shortcuts panel added to Control Centre to enable viewing and configuration of system keyboard shortcuts
+  * Option to switch various dock-based layouts added to Defaults panel in Control Centre
+  * Option for defaults for very large screens added to Defaults panel
+  * Options to make taskbar autohide and to not overlay maximised windows added to Taskbar panel in Control Centre
+  * Option for 96x96 pixel icons added to wf-panel-pi and lxpanel-pi
+  * Option to use swaybg instead of pcmanfm to draw desktop background added to Desktop panel in Control Centre
+  * New screenshot tool added, allowing default behaviour (open, copy to clipboard etc) to be selected
+  * New monolithic build of file manager, pcmanfm-pi, integrating pcmanfm and libfm into one application
+  * Switchable automount of external drives added to ejecter plugin; pcmanfm no longer automounts by default
+  * wf-panel-pi plugin architecture modified to remove requirement for XML metadata files for default values
+  * Structure of source code for plugins modified to improve consistency between behaviour under lxpanel-pi and wf-panel-pi
+  * wf-panel-pi source code restructured and cleaned up to remove legacy functionality and simplify maintenance
+  * Support for wayfire removed from Screens, Mouse and Keyboard panels in Control Centre
+  * Bug fix - menus popped up from gtk-layer-shell windows now constrained to monitor dimensions
+  * labwc and wlroots updated to version 0.20
+  * Raspberry Pi firmware b76effded7afe5ed92070ff169e0109a8487fb82
+  * Linux kernel 6.18.50 - cff533aec2fa601846766b32ff57204e0a61bed7
+2026-06-18:
   * New icons for toolbars in various applications - LibreOffice, geany, xarchiver, eom
   * New icon for Recommended Software
   * Use DBus to prevent multiple instances of various applications - pishutdown, rpcc, agnostics, bookshelf, gui-runcmd, rp-prefapps, piclone
@@ -248,8 +310,63 @@ UNRELEASED:
 2023-12-11:
   * Fix Raspberry Pi Imager's WLAN configuration for lite images
 2023-12-05:
-  * Raspberry Pi firmware 055e044d5359ded1aacc5a17a8e35365373d0b8b
-  * Linux kernel 6.1.21
+  * Serial port switching in rc_gui and raspi-config modified to support Raspberry Pi 5
+  * Touch screens now identified with unique per-device strings to enable correct association with display devices
+  * Compatibility with RP1 displays added
+  * Theme files monitored by pixdecor plugin to load changes on the fly
+  * Main menu shortcut to The Magpi website restored
+  * GTK+2 theme harmonised with GTK+3 theme to enable more uniform theming of Qt applications
+  * Battery monitor plugin enabled
+  * Taskbar Preferences menu item added to panel right-click menu
+  * Better reloading of on-the-fly theme changes
+  * Various improvements to Wayfire rendering
+  * Dark GTK theme added
+  * Bug fix - suppressed warning notifications when removing USB devices without mounted filesystems
+  * Bug fix - volume keyboard shortcuts locked up on some devices
+  * Bug fix - correctly handling multiple USB audio devices with same name
+  * Bug fix - some translations not loading in panel plugins
+  * Bug fix - window titlebars disappearing when tiled
+  * Bug fix - local installer service failing to install local deb files
+  * Bug fix - wizard not correctly setting locale when explicit UTF-8 character set required
+  * Bug fix - system updates could fail if an update required the removal of an installed package
+  * Bug fix - prevent file manager windows opening larger than screen size
+  * Bug fix - GPU plugin displaying load percentage as -1
+  * Bug fix - various window manager crashes associated with shadows on certain window types
+  * Bug fix - allow VNC to be enabled if either RealVNC or WayVNC are installed
+  * WayVNC - improved support for encrypted connections
+  * Mathematica now works on Raspberry Pi 5 and 64-bit
+  * Scratch 3 now works on Raspberry Pi 5 and 64-bit
+  * Thonny updated to version 4.1.4
+  * Chromium updated to 119.0.6045.171
+  * Firefox updated to 119.0
+  * gpiod binary tools included in lite images
+  * python3-venv included in lite images
+  * Japanese translations updated
+  * German translation added to Appearance Settings
+  * Raspberry Pi firmware 12af703dd07d7721c1f2f58c6f71d9fe66270838
+  * Linux kernel 6.1.63
+2023-10-10:
+  * Based on Debian bookworm release
+  * Support for Raspberry Pi 5
+  * Desktop now runs on the Wayfire Wayland compositing window manager on Raspberry Pi 4 and 5 platforms; on X11 using the openbox window manager on older platforms
+  * lxpanel replaced with new wf-panel-pi application when running Wayland; existing lxpanel plugins migrated; gpu performance and power plugins added
+  * pcmanfm modified to use Wayland backend when running on Wayland
+  * PipeWire used instead of PulseAudio as audio control subsystem; various changes made to volume control plugin to support this
+  * NetworkManager used instead of dhcpcd as networking interface; various changes made to networking plugin to support this
+  * Firefox browser added as alternative to Chromium; selection of default browser added to Raspberry Pi Configuration tool
+  * WayVNC VNC server used instead of RealVNC when running on Wayland
+  * All customisation and configuration applications modified to customise Wayfire environment as appropriate
+  * grim used as screenshot tool instead of scrot when running on Wayland
+  * eom image viewer used instead of gpicview
+  * evince document viewer used instead of qpdfview
+  * Chromium web browser updated to version 116
+  * VLC media player updated to version 3.0.18
+  * Magnifier program not available when running Wayland; Wayfire includes screen zoom capabilities
+  * CustomPC and Wireframe removed from Bookshelf
+  * Numerous small changes and bug fixes
+  * Switched from raspberrypi-kernel to Debian-based kernel packaging (linux-image-rpi-*)
+  * Switched from raspberrypi-bootloader to Debian based firmware packaging (raspi-firmware)
+  * /boot mount point moved to /boot/firmware
 2023-05-03:
   * 64-bit Mathematica added to rp-prefapps
   * Bug fix - occasional segfault in CPU temperature plugin

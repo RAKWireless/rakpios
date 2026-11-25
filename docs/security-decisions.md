@@ -55,7 +55,7 @@ The image removes `rpicam-apps-lite`, `mkvtoolnix`, `docker-model-plugin` and `r
 
 - **Why remove:** the camera stack has no use on a LoRaWAN gateway and pulls in Qt 6 core and libtiff. `docker-model-plugin` carried 18 of the 29 Go-module CVEs left after a plain rebuild, and no RAK service uses it. `rpi-connect-lite` is a second remote-access path next to SSH.
 - **Why keep:** the RAK7391 is sold as a developer gateway, and `rakpios-cli` needs `git` to install, update and deploy services.
-- **Cost:** the toolchain accounts for an estimated 150 or so of the image's remaining CVEs. RAK's risk assessment carries that number.
+- **Cost:** in 1.1.0 the toolchain accounts for 47 of the 621 vulnerabilities that remain in its Debian packages (14 High, none Critical), mostly in `python3-virtualenv`, `python3-filelock` and `gdb`. Removing it wouldn't remove the others it touches, because the Python runtime and libraries it shares are needed anyway. RAK's risk assessment carries this number.
 
 ### Removal with `purge`, then `autoremove`
 

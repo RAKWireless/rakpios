@@ -134,6 +134,14 @@ A KEV-listed vulnerability doesn't block a release if RAK has a written analysis
   - None of the 14 is on the KEV list, and their EPSS scores are between 0.0010 and 0.0036. Two can't be reached on RAKPiOS: CVE-2026-89092 is in `nscd`, which isn't installed, and CVE-2026-97399 is in code built only for POWER8.
 - **Cost:** 1.1.0 ships with twelve reachable glibc vulnerabilities that Debian has fixed, two of them rated High: CVE-2026-19499 in `strfmon` and CVE-2026-5435 in the resolver library's record printer. The judgment that none is known to be exploitable rests on the KEV list, EPSS and Debian's descriptions of the fixes, not on an analysis of every program on the image. Devices with automatic updates off stay exposed until their users upgrade, and every device is exposed from first boot until its first update run after the rebuild is out.
 
+### Fixes for programs the image doesn't install don't block a release (26 November 2026)
+
+A vulnerability in a Debian package that has a fix in the image's archives doesn't block a release when the vulnerable program isn't on the image. Each case is listed here with the condition it rests on, which is checked on the release image. A fix for a program the image does install still means a new release image. The alternative was to rebuild for every such fix.
+
+- **Why:** rebuilding would only update packages that don't contain the vulnerable code, and devices install those updates with their first automatic update anyway. Security updates arrive almost daily, so a rule that rebuilds for each one between build and publication can delay a release indefinitely.
+- **Cost:** the analysis holds only while the program stays absent. Installing it later brings Debian's current, fixed version. Scanners report the vulnerability on the related packages until the device's first update.
+- **CVE-2026-135901 (shadow, DSA-6661-1).** Debian fixed `newgidmap` in 1:4.17.4-2+deb13u1 after the 1.1.0 image was built. `newgidmap` comes with the `uidmap` package, which RAKPiOS 1.1.0 doesn't install. Scanners match `passwd` and `login.defs` only because they're built from the same source, and automatic updates bring their fixed versions.
+
 ## Disclosure
 
 ### The advisory goes in the GitHub release notes and a GitHub Security Advisory

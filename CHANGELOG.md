@@ -4,10 +4,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - unreleased
+
+### Security
+- Fixes 294 known vulnerabilities present in 1.0.0 (240 in Debian packages,
+  54 in Docker's Go binaries)
+
+### Added
+- Automatic updates, on by default, without automatic reboots
+- rakpios-auto-updates command and rakpios-cli menu to turn them off
+- Docker live-restore, so Docker upgrades don't stop containers
+- Docker and containerd held to their major version
+- CycloneDX SBOM with every release (tools/sbom.sh)
+
+### Changed
+- Based on upstream 2026-10-06-raspios-trixie-arm64 with 6.18.60 kernel
+- os-release identifies the system as Debian 13, with the RAKPiOS version in IMAGE_VERSION
+- OLED info panel updated to 3.1.0
+- rakpios-cli updated to 0.3.0
+
+### Removed
+- Camera stack (rpicam-apps-lite), mkvtoolnix, rpi-connect-lite and docker-model-plugin
+
+### Fixed
+- COMMIT_SHA and COMMIT_DATE in os-release were empty
+
 ## [1.0.0] - 2026-08-07
 
 ### Changed
-- Based on upstream 2026-06-18-raspios-trixie-arm64 with default 6.12 kernel
+- Based on upstream 2026-06-18-raspios-trixie-arm64 with default 6.18.39 kernel
 - Up to date mioty utility with dependencies
 - Refactor config.txt for compatibility
 - Build now requires qemu-user-binfmt instead of qemu-user-static (upstream change)

@@ -1,0 +1,25 @@
+// RAKPiOS: which updates are installed automatically, and no reboots for them.
+//
+// This file sorts after Debian's 50unattended-upgrades and replaces its list of
+// allowed origins. apt.conf lists add up across files, hence the #clear.
+//
+// Allowed:
+//  - Debian point releases (trixie) and Debian security updates
+//    (trixie-security). trixie-updates is left out, as in Debian's own
+//    default: its fixes arrive with the next point release.
+//  - The whole Raspberry Pi archive. It has no separate security suite, and it
+//    carries the kernel, the firmware and Raspberry Pi's rebuilds of Debian
+//    libraries.
+//  - Docker CE. /etc/apt/preferences.d/docker-major-hold keeps Docker and
+//    containerd on the major versions this image shipped with.
+#clear Unattended-Upgrade::Origins-Pattern;
+Unattended-Upgrade::Origins-Pattern {
+    "origin=Debian,codename=${distro_codename},label=Debian";
+    "origin=Debian,codename=${distro_codename}-security,label=Debian-Security";
+    "origin=Raspberry Pi Foundation,codename=${distro_codename},label=Raspberry Pi Foundation";
+    "origin=Docker,label=Docker CE";
+};
+
+// Gateways run unattended, and a reboot interrupts their traffic. Updated
+// libraries and a new kernel take effect at the next reboot the user chooses.
+Unattended-Upgrade::Automatic-Reboot "false";

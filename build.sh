@@ -131,6 +131,9 @@ term() {
 	else
 		log "Build finished"
 	fi
+	if [ -n "${ARCH_TEST_DIR}" ]; then
+		rm -rf "${ARCH_TEST_DIR}"
+	fi
 	unmount "${STAGE_WORK_DIR}"
 	if [ "$STAGE" = "export-image" ]; then
 		for img in "${STAGE_WORK_DIR}/"*.img; do
@@ -258,12 +261,17 @@ export VERSION
 export ARCH=${ARCH:-"arm64"}
 export KERNEL_STRATEGY=${KERNEL_STRATEGY:-"default"}
 export KERNEL_TAG
+# Commit date of the source, recorded in os-release. build-docker.sh passes it
+# in, because git log can't run inside the container; a native build reads it
+# here. If neither works it stays empty, and the os-release check fails the build.
+export GIT_COMMIT_DATE=${GIT_COMMIT_DATE:-"$(git log -1 --format=%cs 2>/dev/null)"}
 
 if [ "$SETFCAP" != "1" ]; then
 	export CAPSH_ARG="--drop=cap_setfcap"
 fi
 
 mkdir -p "${WORK_DIR}"
+unset ARCH_TEST_DIR
 trap term EXIT INT TERM
 
 dependencies_check "${BASE_DIR}/depends"
@@ -284,10 +292,16 @@ fi
 echo "Checking native $ARCH executable support..."
 if ! arch-test -n "$ARCH"; then
 	echo "WARNING: Only a native build environment is supported. Checking emulated support..."
-	if ! arch-test "$ARCH"; then
+	# Test in an empty chroot: a binfmt_misc entry without the F flag works here
+	# but fails in every chroot the build makes
+	ARCH_TEST_DIR="$(mktemp -d)"
+	if ! arch-test -c "$ARCH_TEST_DIR" "$ARCH"; then
 		echo "No fallback mechanism found. Ensure your OS has binfmt_misc support enabled and configured."
+		echo "Install qemu-user-binfmt, or qemu-user-static if your distribution's qemu-user binaries are dynamically linked."
 		exit 1
 	fi
+	rm -rf "$ARCH_TEST_DIR"
+	unset ARCH_TEST_DIR
 fi
 
 #check username is valid
